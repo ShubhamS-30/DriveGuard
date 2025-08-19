@@ -80,7 +80,7 @@ public class DataSimulatorService {
         List<String> tripIds = new ArrayList<>();
         String paddedMonth = month.length() == 2 ? month : String.format("%02d", Integer.parseInt(month));
         String folderName = carNumber + "_" + year + "_" + paddedMonth;
-        System.out.println("Looking for trip IDs in folder: " + folderName);
+        log.info("Looking for trip IDs in folder: " + folderName);
 
         Path monthDir = Paths.get(dataSimulatorDirectory, folderName);
 
