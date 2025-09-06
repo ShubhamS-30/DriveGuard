@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.driveGuard.dataProducer.AppLogger;
 import com.driveGuard.dataProducer.dto.TripRow;
+import com.driveGuard.dataProducer.entity.Car;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
@@ -76,9 +77,10 @@ public class DataSimulatorService {
      * Returns all unique trip IDs for a given car and month. Trip files are
      * named like 0_00001.csv, 0_00002.csv, etc.
      */
-    public List<String> getTripIdsForMonth(String carNumber, String year, String month) throws IOException, TripNotFoundException {
+    public List<String> getTripIdsForMonth(String carNumber, String year, String month)
+            throws IOException, TripNotFoundException {
         List<String> tripIds = new ArrayList<>();
-        String paddedMonth = month.length() == 2 ? month : String.format("%02d", Integer.parseInt(month));
+        String paddedMonth = month.length() == 2 ? month : String.format("%02d", Integer.valueOf(month));
         String folderName = carNumber + "_" + year + "_" + paddedMonth;
         log.info("Looking for trip IDs in folder: " + folderName);
 
@@ -100,4 +102,10 @@ public class DataSimulatorService {
         }
         return tripIds;
     }
+
+    public List<Car> getActiveSimulatedCars() {
+        // Implementation to return list of cars currently being simulated
+        return new ArrayList<>();
+    }
+
 }

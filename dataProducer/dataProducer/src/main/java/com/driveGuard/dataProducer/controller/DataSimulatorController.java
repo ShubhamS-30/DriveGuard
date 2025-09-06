@@ -17,11 +17,15 @@ import com.driveGuard.dataProducer.service.DataSimulatorService;
 @RequestMapping("/data")
 public class DataSimulatorController {
 
+    private final DataSimulatorService dataSimulatorService;
+
     @Autowired
-    private DataSimulatorService dataSimulatorService;
+    public DataSimulatorController(DataSimulatorService dataSimulatorService) {
+        this.dataSimulatorService = dataSimulatorService;
+    }
 
     @GetMapping("/car/{carNumber}/files")
-    public List<String> getExcelFiles(@PathVariable String carNumber) throws IOException, TripNotFoundException {
+    public List<String> getExcelFiles(@PathVariable String carNumber) throws TripNotFoundException {
         return dataSimulatorService.getCarMonthFoldersWithExcelFiles(carNumber);
     }
 
