@@ -5,15 +5,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.driveGuard.dataProducer.AppLogger;
 import com.driveGuard.dataProducer.dto.TripRow;
-import com.driveGuard.dataProducer.entity.Car;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
@@ -27,6 +29,21 @@ public class DataSimulatorService {
 
     @Value("${data.simulator.directory}")
     private String dataSimulatorDirectory;
+
+    @Value("${data.simulation.year}")
+    private Integer simulationYear;
+
+    @Value("${data.cab.location.topic.name}")
+    private String cabLocationTopicName;
+
+    private final ProduceMessages produceMessages;
+
+    Random r;
+
+    public DataSimulatorService(ProduceMessages produceMessages) {
+        this.produceMessages = produceMessages;
+        r = new Random();
+    }
 
     public List<String> getCarMonthFoldersWithExcelFiles(String carNumber) throws TripNotFoundException {
         List<String> folderNames = new ArrayList<>();
@@ -103,9 +120,102 @@ public class DataSimulatorService {
         return tripIds;
     }
 
-    public List<Car> getActiveSimulatedCars() {
-        // Implementation to return list of cars currently being simulated
-        return new ArrayList<>();
+    public void selectTripByCarId(Integer carId) throws IOException, TripNotFoundException {
+        int tripMonth = r.nextInt(12) + 1;
+        String carNumber = String.format("%03d", carId); // Safer way to format car ID
+
+        // This will prevent a trip from being marked "ended" if no data could be found.
+        List<String> trips = getTripIdsForMonth(carNumber, simulationYear.toString(), Integer.toString(tripMonth));
+        if (trips.isEmpty()) {
+            throw new TripNotFoundException("No trips found for car " + carNumber + " in month " + tripMonth);
+        }
+
+        int tripIndex = r.nextInt(trips.size());
+        String tripId = trips.get(tripIndex);
+        publishTripData(carNumber, tripId, Integer.toString(tripMonth));
+    }
+
+    /**
+     * Reads a specific trip file and publishes its data to Kafka, simulating real-time speed.
+     *
+     * @param carNumber The ID of the car (e.g., "005").
+     * @param tripId    The ID of the trip (e.g., "0_00001").
+     * @param tripMonth The month of the trip (e.g., "2").
+     * @throws IOException           If the file cannot be read.
+     * @throws TripNotFoundException If the specified trip file does not exist.
+     */
+    public void publishTripData(String carNumber, String tripId, String tripMonth) throws IOException, TripNotFoundException {
+        String tripMonthFormatted = String.format("%02d", Integer.parseInt(tripMonth));
+        String folderName = carNumber + "_" + simulationYear + "_" + tripMonthFormatted;
+        String fileName = tripId + ".csv";
+        log.info("Starting simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
+
+        Path tripFile = Paths.get(dataSimulatorDirectory, folderName, fileName);
+        if (!Files.exists(tripFile)) {
+            log.error("Trip file not found at path: {}", tripFile);
+            throw new TripNotFoundException("Trip file not found: " + tripFile);
+        }
+
+        CsvMapper mapper = new CsvMapper();
+        CsvSchema schema = CsvSchema.emptySchema().withHeader();
+
+        // Process the file line-by-line to avoid high memory usage.
+        try (FileInputStream fis = new FileInputStream(tripFile.toFile())) {
+            MappingIterator<TripRow> it = mapper.readerFor(TripRow.class).with(schema).readValues(fis);
+            long totalRows = 0;
+            try (Stream<String> lines = Files.lines(tripFile)) {
+                totalRows = lines.count() - 1;
+            } // Get total for percentage calculation, -1 for
+            if(totalRows == 0){
+                throw new TripNotFoundException("Trip file is empty: " + tripFile);
+            }
+            long currentRow = 0;
+
+            while (it.hasNext()) {
+                TripRow row = it.next();
+                currentRow++;
+
+                // Enrich the row data
+                row.setCarId(carNumber);
+                row.setTimestamp(Instant.now().toString());
+                double completionPercent = ((double) currentRow / totalRows) * 100;
+                row.setTripCompletion(completionPercent);
+
+                // Send the message
+                produceMessages.produceMessageByTopicAndKey(cabLocationTopicName, carNumber, row.toString());
+
+                // Simulate the time delay
+                simulateTimeDelay(Double.parseDouble(row.getTargetSpeed()));
+            }
+        } catch (InterruptedException e) {
+            log.warn("Simulation for trip {} was interrupted.", tripId);
+            Thread.currentThread().interrupt();
+        } catch (NumberFormatException e) {
+            log.error("Could not parse target_speed for a row in trip " + tripId, (Path) e);
+        }
+        log.info("Finished simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
+    }
+
+    /**
+     * Pauses the current thread to simulate the time it would take to travel 1 meter.
+     *
+     * @param speedKmh The vehicle's speed in kilometers per hour.
+     * @throws InterruptedException if the thread is interrupted while sleeping.
+     */
+    private void simulateTimeDelay(double speedKmh) throws InterruptedException {
+        if (speedKmh > 0) {
+            // Convert km/h to meters/second
+            double speedMps = speedKmh / 3.6;
+            // Calculate time (in seconds) to travel 1 meter
+            double timeSeconds = 1.0 / speedMps;
+            // Convert to milliseconds for Thread.sleep()
+            long sleepDurationMs = (long) (timeSeconds * 1000);
+
+            Thread.sleep(sleepDurationMs);
+        } else {
+            // If the car is stationary, pause for a default interval (e.g., 1 second)
+            Thread.sleep(1000);
+        }
     }
 
 }

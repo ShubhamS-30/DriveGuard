@@ -2,37 +2,42 @@ package com.driveGuard.dataProducer.service;
 
 import com.driveGuard.dataProducer.entity.Car;
 import com.driveGuard.dataProducer.repository.CarRepository;
-
+import com.driveGuard.dataProducer.exception.TripNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.test.util.ReflectionTestUtils;
-
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.mockito.MockitoAnnotations.openMocks;
-
-import com.driveGuard.dataProducer.exception.TripNotFoundException;
 
 class CarServiceTest {
 
     @Mock
     private CarRepository carRepository;
 
-    @InjectMocks
-    private CarService carService;
-
     @Mock
     private ProduceMessages produceMessages;
-    
+
+    @Mock
+    private DataSimulatorService dataSimulatorService;
+
+    private CarService carService;
 
     @BeforeEach
     void setUp() {
-        openMocks(this);
+        MockitoAnnotations.openMocks(this);
+        carService = new CarService(carRepository, produceMessages, dataSimulatorService, 5);
+        ReflectionTestUtils.setField(carService, "cabStatusTopicName", "test-topic");
+        ReflectionTestUtils.setField(carService, "chanceOfTrip", 0.0); // For deterministic tests
     }
 
     @Test
@@ -122,34 +127,108 @@ class CarServiceTest {
     }
 
     @Test
-    void testStartTripDataSimulationByCarId_startsTripAndProducesMessage() {
+    void testRunFullTripLifecycle_completesSuccessfully() throws Exception {
+        // --- 1. Given (Arrange) ---
+        int carId = 1;
         Car car = new Car();
-        car.setCnr(1);
+        car.setCnr(carId);
         car.setIsActiveTrip(false);
-        when(carRepository.findById(1)).thenReturn(Optional.of(car));
+
+        // Mock the database interactions
+        when(carRepository.findById(carId)).thenReturn(Optional.of(car));
         when(carRepository.save(any(Car.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Set the topic name
-        ReflectionTestUtils.setField(carService, "cabStatusTopicName", "test-topic");
+        // Mock the long-running simulation
+        doNothing().when(dataSimulatorService).selectTripByCarId(anyInt());
 
-        Car result = carService.startTripDataSimulationByCarId(1);
-        assertTrue(result.getIsActiveTrip());
-        verify(produceMessages).produceMessageByTopic(anyString(), anyString());
+        // --- 2. When (Act) ---
+        // The method is now void, so there's no return value to capture
+        carService.runFullTripLifecycle(carId);
+
+        // --- 3. Then (Assert) ---
+        // Verify that the simulation was called exactly once
+        verify(dataSimulatorService, times(1)).selectTripByCarId(carId);
+
+        // Capture the Car objects passed to the save method
+        ArgumentCaptor<Car> carCaptor = ArgumentCaptor.forClass(Car.class);
+        verify(carRepository, times(2)).save(carCaptor.capture());
+
+        // Get the car object from the SECOND save call (which is from endTrip)
+        Car finalCarState = carCaptor.getAllValues().get(1);
+
+        // Assert that the car is INACTIVE in its final saved state
+        assertFalse(finalCarState.getIsActiveTrip(), "Car should be inactive in its final state.");
+
+        // You can still capture and verify the Kafka messages as before
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(produceMessages, times(2)).produceMessageByTopic(anyString(), messageCaptor.capture());
+
+        List<String> capturedMessages = messageCaptor.getAllValues();
+        assertTrue(capturedMessages.get(0).contains("STARTING"), "First message should be a STARTING event.");
+        assertTrue(capturedMessages.get(1).contains("ENDING"), "Second message should be an ENDING event.");
     }
 
     @Test
-    void testStopTripDataSimulationByCarId_endsTripAndProducesMessage() {
+    void testStopTripDataSimulationByCarId_endsTripAndProducesMessage() throws IOException {
         Car car = new Car();
         car.setCnr(1);
         car.setIsActiveTrip(true);
         when(carRepository.findById(1)).thenReturn(Optional.of(car));
         when(carRepository.save(any(Car.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Set the topic name
-        ReflectionTestUtils.setField(carService, "cabStatusTopicName", "test-topic");
-
         Car result = carService.stopTripDataSimulationByCarId(1);
         assertFalse(result.getIsActiveTrip());
         verify(produceMessages).produceMessageByTopic(anyString(), anyString());
+    }
+
+    @Test
+    void testRunFullTripLifecycle_maxTripsReached() throws InterruptedException, IOException {
+        // --- Setup Mocks and Configuration ---
+        int maxTrips = 5;
+        // Manually set the @Value field for the test
+        ReflectionTestUtils.setField(carService, "maxConcurrentTrips", maxTrips);
+        // Re-initialize the semaphore with the correct value
+        ReflectionTestUtils.setField(carService, "tripSemaphore", new java.util.concurrent.Semaphore(maxTrips));
+
+        when(carRepository.findById(anyInt())).thenAnswer(invocation -> {
+            Car car = new Car();
+            car.setCnr(invocation.getArgument(0));
+            car.setIsActiveTrip(false);
+            return Optional.of(car);
+        });
+        when(carRepository.save(any(Car.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Use a latch to wait for background tasks to start
+        CountDownLatch latch = new CountDownLatch(maxTrips);
+
+        // **CRITICAL:** Mock the long-running task to "hang" and hold the semaphore permit
+        doAnswer(invocation -> {
+            latch.countDown(); // Signal that this task has started
+            Thread.sleep(2000); // Block to simulate a long trip
+            return null;
+        }).when(dataSimulatorService).selectTripByCarId(anyInt());
+
+        // --- Execute Test ---
+        ExecutorService testExecutor = Executors.newFixedThreadPool(maxTrips);
+        // Start 'maxTrips' trips in the background to use up all permits
+        for (int i = 0; i < maxTrips; i++) {
+            final int carId = i + 100;
+            testExecutor.submit(() -> carService.runFullTripLifecycle(carId));
+        }
+
+        // Wait for all trips to start and acquire their permits
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Not all trips acquired a semaphore permit in time.");
+
+        // --- Assert ---
+        // Now, this 6th call on the main thread should fail
+        TripNotFoundException ex = assertThrows(
+                TripNotFoundException.class,
+                () -> carService.runFullTripLifecycle(1)
+        );
+
+        assertTrue(ex.getMessage().contains("Max Trip Limit Reached"));
+
+        // --- Cleanup ---
+        testExecutor.shutdownNow();
     }
 }

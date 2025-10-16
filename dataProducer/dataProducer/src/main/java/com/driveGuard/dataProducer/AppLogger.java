@@ -3,6 +3,8 @@ package com.driveGuard.dataProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+
 public class AppLogger {
 
     private final Logger logger;
@@ -19,12 +21,22 @@ public class AppLogger {
         logger.info(message);
     }
 
-    public void warn(String message) {
-        logger.warn(message);
+    // FIX 1: Use SLF4J's parameterized logging to include the tripId.
+    public void warn(String message, String tripId) {
+        // The {} is a placeholder that will be replaced by tripId.
+        logger.warn(message + " [TripID: {}]", tripId);
     }
 
-    public void error(String message) {
-        logger.error(message);
+    // FIX 2: Overload the error method to accept a Throwable.
+    // This is the standard and correct way to log exceptions.
+    public void error(String message, Throwable throwable) {
+        logger.error(message, throwable);
+    }
+
+    // You can keep this method if you sometimes need to log an error with a file path.
+    public void error(String message, Path tripFile) {
+        // Also uses a placeholder for the path.
+        logger.error(message + " [File: {}]", tripFile);
     }
 
     public void debug(String message) {

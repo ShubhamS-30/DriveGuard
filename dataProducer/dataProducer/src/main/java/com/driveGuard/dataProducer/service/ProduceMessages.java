@@ -17,7 +17,10 @@ public class ProduceMessages {
 
     public void produceMessageByTopic(String topic, String message) {
         kafkaTemplate.send(topic, message);
-        log.info("Produced message to topic '" + topic + "': " + message);
+    }
+
+    public void produceMessageByTopicAndKey(String topic, String key, String message) {
+        kafkaTemplate.send(topic, key, message);
     }
 
     // @KafkaListener(topics = "#{T(java.lang.System).getProperty('topicId')}", groupId = "driveGuard-group")

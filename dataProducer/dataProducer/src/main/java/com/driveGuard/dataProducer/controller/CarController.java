@@ -1,5 +1,6 @@
 package com.driveGuard.dataProducer.controller;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,13 +48,9 @@ public class CarController {
         return carService.saveCar(car);
     }
 
-    @PutMapping("startTrip/{id}")
-    public ResponseEntity<Car> startTrip(@PathVariable("id") Integer carId) {
-        return ResponseEntity.ok(carService.startTripDataSimulationByCarId(carId));
-    }
 
     @PutMapping("stopTrip/{id}")
-    public ResponseEntity<Car> putMethodName(@PathVariable("id") Integer carId) {
+    public ResponseEntity<Car> putMethodName(@PathVariable("id") Integer carId) throws IOException {
         return ResponseEntity.ok(carService.stopTripDataSimulationByCarId(carId));
     }
 }

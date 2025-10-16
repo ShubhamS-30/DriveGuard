@@ -2,6 +2,9 @@ package com.driveGuard.dataProducer.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -61,4 +64,15 @@ public class TripRow {
 
     @JsonProperty("elevation_diff")
     private String elevationDiff;
+
+    @NotNull(message = "Car Id cannot be null")
+    private String carId;
+
+    @NotNull(message = "Timestamp cannot be null")
+    private String timestamp;
+
+    @NotNull(message = "Trip completion cannot be null")
+    @Min(value = 0, message = "Trip completion must be at least 0")
+    @Max(value = 100, message = "Trip completion must be at most 100")
+    private double tripCompletion;
 }
