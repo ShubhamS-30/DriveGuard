@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,9 @@ public class DataSimulatorService {
 
     @Value("${data.cab.location.topic.name}")
     private String cabLocationTopicName;
+
+    @Value("${data.cab.status.topic.name}")
+    private String cabStatusTopicName;
 
     private final ProduceMessages produceMessages;
 
@@ -144,12 +148,11 @@ public class DataSimulatorService {
      * @throws IOException           If the file cannot be read.
      * @throws TripNotFoundException If the specified trip file does not exist.
      */
+    @Transactional
     public void publishTripData(String carNumber, String tripId, String tripMonth) throws IOException, TripNotFoundException {
         String tripMonthFormatted = String.format("%02d", Integer.parseInt(tripMonth));
         String folderName = carNumber + "_" + simulationYear + "_" + tripMonthFormatted;
         String fileName = tripId + ".csv";
-        log.info("Starting simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
-
         Path tripFile = Paths.get(dataSimulatorDirectory, folderName, fileName);
         if (!Files.exists(tripFile)) {
             log.error("Trip file not found at path: {}", tripFile);
@@ -170,6 +173,10 @@ public class DataSimulatorService {
                 throw new TripNotFoundException("Trip file is empty: " + tripFile);
             }
             long currentRow = 0;
+
+            log.info("Starting simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
+            produceMessages.produceMessageByTopic(cabStatusTopicName, "STARTING CAR NO = " + carNumber + " TRIP ID = " + tripId);
+
 
             while (it.hasNext()) {
                 TripRow row = it.next();
@@ -193,7 +200,11 @@ public class DataSimulatorService {
         } catch (NumberFormatException e) {
             log.error("Could not parse target_speed for a row in trip " + tripId, (Path) e);
         }
-        log.info("Finished simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
+        finally {
+            produceMessages.produceMessageByTopic(cabStatusTopicName, "ENDING CAR NO = " + carNumber + " TRIP ID = " + tripId);
+            log.info("Finished simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
+        }
+
     }
 
     /**

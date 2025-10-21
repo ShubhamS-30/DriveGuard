@@ -29,7 +29,7 @@ public class CarService {
     private final CarRepository carRepository;
     private final ProduceMessages produceMessages;
     private final DataSimulatorService dataSimulatorService;
-    private ExecutorService executorService;
+    private final ExecutorService executorService;
 
     @Value("${data.cab.status.topic.name}")
     private String cabStatusTopicName;
@@ -40,7 +40,7 @@ public class CarService {
     @Value("${data.simulation.chance.of.trip}")
     private double chanceOfTrip;
 
-    private Semaphore tripSemaphore;
+    private final Semaphore tripSemaphore;
 
     public CarService(CarRepository carRepository, ProduceMessages produceMessages,DataSimulatorService dataSimulatorService,@Value("${data.simulation.max.concurrent.trips}") Integer maxConcurrentTrips) {
         this.carRepository = carRepository;
@@ -117,17 +117,9 @@ public class CarService {
                 throw new TripNotFoundException("Max Trip Limit Reached. Please try again later.");
             }
 
-            log.info("STARTING trip data simulation for Car ID: {}" + carId);
-
-            // The startTrip method now handles the race condition better with @Transactional
-            produceMessages.produceMessageByTopic(cabStatusTopicName, "STARTING = " + carDetails.toString());
-
             // This is the actual long-running simulation
             dataSimulatorService.selectTripByCarId(carDetails.getCnr());
 
-            log.info("ENDING trip data simulation for Car ID: {}" + carId);
-            Car endedCarDetails = endTrip(carId);
-            produceMessages.produceMessageByTopic(cabStatusTopicName, "ENDING = " + endedCarDetails.toString());
 
         } catch (TripNotFoundException e) {
             log.error("TripNotFoundException for Car ID: {}" + carId, e);
@@ -160,7 +152,7 @@ public class CarService {
         for (Car car : activeCars) {
             try {
                 // Use your existing method to end the trip and send the Kafka message.
-                this.stopTripDataSimulationByCarId(car.getCnr());
+                this.forceStopTripDataSimulationByCarId(car.getCnr());
                 log.info("Successfully ended trip for Car ID: " + car.getCnr());
             } catch (Exception e) {
                 // Log an error but continue the shutdown process.
@@ -179,10 +171,14 @@ public class CarService {
         }
     }
 
-    public Car stopTripDataSimulationByCarId(Integer carId)  {
+    public void forceStopTripDataSimulationByCarId(Integer carId)  {
        // Implementation for stopping trip data simulation for a specific car
        Car details = endTrip(carId);
        produceMessages.produceMessageByTopic(cabStatusTopicName, "ENDING = " + details.toString());
-       return details;
+    }
+
+    public Car stopTripDataSimulationByCarId(Integer carId)  {
+        // Implementation for stopping trip data simulation for a specific car
+        return  endTrip(carId);
     }
 }
