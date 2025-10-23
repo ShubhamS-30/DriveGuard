@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.driveGuard.dataProducer.dto.TripRow;
+import com.driveGuard.dataProducer.entity.TripRow;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
 import com.driveGuard.dataProducer.service.DataSimulatorService;
 

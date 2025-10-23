@@ -1,6 +1,10 @@
 package com.driveGuard.dataProducer.service;
 
+import com.driveGuard.dataProducer.dto.message.TripStatusMessage;
+import com.driveGuard.dataProducer.entity.Car;
+import com.driveGuard.dataProducer.entity.TripRow;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
+import com.driveGuard.dataProducer.repository.CarRepository;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -11,11 +15,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class DataSimulatorServiceTest {
 
@@ -24,22 +28,27 @@ class DataSimulatorServiceTest {
 
     private DataSimulatorService dataSimulatorService;
 
+    @Mock
+    private CarRepository carRepository;
+
     // JUnit will create and clean up this temporary directory for us
     @TempDir
     Path tempDir;
 
+    // We'll define topic names here to use for setup and verification
+    private final String LOCATION_TOPIC = "test-locations";
+    private final String STATUS_TOPIC = "test-status";
+
     @BeforeEach
     void setUp() {
-        // This line activates all @Mock annotations in this class
         MockitoAnnotations.openMocks(this);
+        dataSimulatorService = new DataSimulatorService(produceMessages, carRepository);
 
-        // Now, 'produceMessages' is a fully initialized mock object, not null
-        dataSimulatorService = new DataSimulatorService(produceMessages);
-
-        // Set the @Value fields for the test
+        // Inject all @Value fields
         ReflectionTestUtils.setField(dataSimulatorService, "dataSimulatorDirectory", tempDir.toString());
         ReflectionTestUtils.setField(dataSimulatorService, "simulationYear", 2021);
-        ReflectionTestUtils.setField(dataSimulatorService, "cabLocationTopicName", "test-locations");
+        ReflectionTestUtils.setField(dataSimulatorService, "cabLocationTopicName", LOCATION_TOPIC);
+        ReflectionTestUtils.setField(dataSimulatorService, "cabStatusTopicName", STATUS_TOPIC);
     }
 
     @Test
@@ -87,33 +96,43 @@ class DataSimulatorServiceTest {
         String tripMonth = "01";
         String folderName = carNumber + "_2021_" + tripMonth;
 
-        // Create a fake CSV file with a header and two data rows
+        // Create a fake CSV file
         Path tripFolder = tempDir.resolve(folderName);
         Files.createDirectories(tripFolder);
         Path tripFile = tripFolder.resolve(tripId + ".csv");
+        // Use the correct header name from your TripRow class
         String csvContent = "target_speed,latitude,longitude\n" +
                 "50.5,12.34,56.78\n" +
                 "60.0,12.35,56.79\n";
         Files.writeString(tripFile, csvContent);
 
+        // --- Mock the Repository ---
+        Car mockCar = new Car();
+        mockCar.setCnr(1);
+        mockCar.setIsActiveTrip(false); // Start as inactive
+        when(carRepository.findById(1)).thenReturn(Optional.of(mockCar));
+        when(carRepository.save(any(Car.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
         // --- When ---
         dataSimulatorService.publishTripData(carNumber, tripId, tripMonth);
 
         // --- Then ---
-        // Verify that our message producer was called exactly 2 times (once for each data row)
         ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<TripRow> messageCaptor = ArgumentCaptor.forClass(TripRow.class);
 
+        // Verify the location topic calls (2 times)
         verify(produceMessages, times(2))
-                .produceMessageByTopicAndKey(anyString(), keyCaptor.capture(), messageCaptor.capture());
+                .produceMessageByTopicAndKey(eq(LOCATION_TOPIC), keyCaptor.capture(), messageCaptor.capture());
 
-        // Assert the key is correct
-        assertEquals(carNumber, keyCaptor.getValue());
+        // Verify the status topic calls (also 2 times, for start and end)
+        verify(produceMessages, times(2))
+                .produceMessageByTopic(eq(STATUS_TOPIC), any(TripStatusMessage.class));
 
-        // Assert the content of the last message
-        String lastMessage = messageCaptor.getValue();
-        assertTrue(lastMessage.contains("targetSpeed=60.0"));
-        assertTrue(lastMessage.contains("carId=001"));
+        // We captured two TripRow messages, let's get the last one.
+        TripRow lastMessage = messageCaptor.getValue();
+        assertEquals("60.0", lastMessage.getTargetSpeed());
+        assertEquals(carNumber, lastMessage.getCarId());
+        assertEquals(100.0, lastMessage.getTripCompletion());
     }
 
     @Test

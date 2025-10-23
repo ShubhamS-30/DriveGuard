@@ -1,18 +1,15 @@
-package com.driveGuard.dataProducer.entity;
+package com.driveGuard.dataProducer.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-public class Car {
-    @Id
+public class CarDTO {
+    @NotNull(message = "Car Number cannot be null")
     private Integer cnr;
     private String manufacturer;
     private String model;
@@ -20,9 +17,6 @@ public class Car {
     private Integer powerKw;
     private String transmission;
     private Integer weightKg;
-    @Column(name = "active_trip")
     private Boolean isActiveTrip;
-    @Column(name = "active_trip_number", nullable = true)
     private String activeTripNumber;
 }
-

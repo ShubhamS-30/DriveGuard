@@ -1,4 +1,4 @@
-package com.driveGuard.dataProducer.dto;
+package com.driveGuard.dataProducer.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -67,6 +67,9 @@ public class TripRow {
 
     @NotNull(message = "Car Id cannot be null")
     private String carId;
+
+    @NotNull(message = "Trip Number cannot be null")
+    private String tripNumber;
 
     @NotNull(message = "Timestamp cannot be null")
     private String timestamp;

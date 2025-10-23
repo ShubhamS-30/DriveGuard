@@ -8,12 +8,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
+import com.driveGuard.dataProducer.utility.AppLogger;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import com.driveGuard.dataProducer.AppLogger;
 import com.driveGuard.dataProducer.entity.Car;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
 import com.driveGuard.dataProducer.repository.CarRepository;
@@ -47,8 +47,8 @@ public class CarService {
         this.produceMessages = produceMessages;
         this.dataSimulatorService = dataSimulatorService;
 
-        // 1. CREATE THREAD POOL AND SEMAPHORE ONLY ONCE
-        this.executorService = Executors.newCachedThreadPool(); // Or a fixed pool
+        // CREATE THREAD POOL AND SEMAPHORE ONLY ONCE
+        this.executorService = Executors.newCachedThreadPool();
         this.tripSemaphore = new Semaphore(maxConcurrentTrips);
     }
 
@@ -67,31 +67,8 @@ public class CarService {
         return carRepository.save(car);
     }
 
-    // Start a trip
-    public Car startTrip(Integer cnr) {
-        Optional<Car> optionalCar = carRepository.findById(cnr);
-        if (optionalCar.isPresent()) {
-            Car car = optionalCar.get();
-            if(Boolean.TRUE.equals(car.getIsActiveTrip())){
-                throw new TripNotFoundException("Trip is already active for Car ID: " + cnr);
-            }
-            car.setIsActiveTrip(true);
-            return carRepository.save(car);
-        }
-        throw new TripNotFoundException("Car not found with ID: " + cnr);
-    }
-
     public Car endTrip(Integer cnr) {
-        Optional<Car> optionalCar = carRepository.findById(cnr);
-        if (optionalCar.isPresent()) {
-            Car car = optionalCar.get();
-            if(Boolean.FALSE.equals(car.getIsActiveTrip())){
-                throw new TripNotFoundException("Trip is not active for Car ID: " + cnr);
-            }
-            car.setIsActiveTrip(false);
-            return carRepository.save(car);
-        }
-        throw new TripNotFoundException("Car not found with ID: " + cnr);
+       return dataSimulatorService.endTrip(cnr);
     }
 
     @Scheduled(cron = "0 * * * * *")
@@ -110,7 +87,6 @@ public class CarService {
     }
 
     public void runFullTripLifecycle(Integer carId) {
-        Car carDetails = startTrip(carId);
         try {
             // 2. ACQUIRE SEMAPHORE before starting anything
             if (!tripSemaphore.tryAcquire()) {
@@ -118,7 +94,7 @@ public class CarService {
             }
 
             // This is the actual long-running simulation
-            dataSimulatorService.selectTripByCarId(carDetails.getCnr());
+            dataSimulatorService.selectTripByCarId(carId);
 
 
         } catch (TripNotFoundException e) {
@@ -152,7 +128,7 @@ public class CarService {
         for (Car car : activeCars) {
             try {
                 // Use your existing method to end the trip and send the Kafka message.
-                this.forceStopTripDataSimulationByCarId(car.getCnr());
+                this.forceStopTripDataSimulationByCarId(car);
                 log.info("Successfully ended trip for Car ID: " + car.getCnr());
             } catch (Exception e) {
                 // Log an error but continue the shutdown process.
@@ -171,10 +147,9 @@ public class CarService {
         }
     }
 
-    public void forceStopTripDataSimulationByCarId(Integer carId)  {
+    public void forceStopTripDataSimulationByCarId(Car car)  {
        // Implementation for stopping trip data simulation for a specific car
-       Car details = endTrip(carId);
-       produceMessages.produceMessageByTopic(cabStatusTopicName, "ENDING = " + details.toString());
+        endTrip(car.getCnr());
     }
 
     public Car stopTripDataSimulationByCarId(Integer carId)  {

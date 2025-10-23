@@ -6,17 +6,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import com.driveGuard.dataProducer.dto.message.TripStatusMessage;
+import com.driveGuard.dataProducer.entity.Car;
+import com.driveGuard.dataProducer.repository.CarRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.driveGuard.dataProducer.AppLogger;
-import com.driveGuard.dataProducer.dto.TripRow;
+import com.driveGuard.dataProducer.utility.AppLogger;
+import com.driveGuard.dataProducer.entity.TripRow;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
@@ -42,10 +48,13 @@ public class DataSimulatorService {
 
     private final ProduceMessages produceMessages;
 
+    private final CarRepository carRepository;
+
     Random r;
 
-    public DataSimulatorService(ProduceMessages produceMessages) {
+    public DataSimulatorService(ProduceMessages produceMessages,CarRepository carRepository) {
         this.produceMessages = produceMessages;
+        this.carRepository = carRepository;
         r = new Random();
     }
 
@@ -139,6 +148,47 @@ public class DataSimulatorService {
         publishTripData(carNumber, tripId, Integer.toString(tripMonth));
     }
 
+    // Start a trip
+    public Car startTrip(Integer cnr,String tripNumber) {
+        Optional<Car> optionalCar = carRepository.findById(cnr);
+        if (optionalCar.isPresent()) {
+            Car car = optionalCar.get();
+            if(Boolean.TRUE.equals(car.getIsActiveTrip())){
+                throw new TripNotFoundException("Trip is already active for Car ID: " + cnr);
+            }
+            car.setIsActiveTrip(true);
+            car.setActiveTripNumber(tripNumber);
+            // TODO: CREATE A NEW TRIP RECORD IN THE TRIP TABLE
+            return carRepository.save(car);
+        }
+        throw new TripNotFoundException("Car not found with ID: " + cnr);
+    }
+
+    public Car endTrip(Integer cnr) {
+        Optional<Car> optionalCar = carRepository.findById(cnr);
+        if (optionalCar.isPresent()) {
+            Car car = optionalCar.get();
+
+            if(Boolean.FALSE.equals(car.getIsActiveTrip())){
+                throw new TripNotFoundException("Trip is not active for Car ID: " + cnr);
+            }
+
+            TripStatusMessage tripStatusMessage = new TripStatusMessage();
+            tripStatusMessage.setCnr(car.getCnr());
+            tripStatusMessage.setTripNumber(car.getActiveTripNumber());
+            tripStatusMessage.setTripStatus(false);
+            tripStatusMessage.setTimestamp(Instant.now().toString());
+
+            produceMessages.produceMessageByTopic(cabStatusTopicName, tripStatusMessage);
+
+            car.setIsActiveTrip(false);
+            car.setActiveTripNumber(null);
+            // TODO: UPDATE THE TRIP RECORD IN THE TRIP TABLE TO MARK IT AS COMPLETED
+            return carRepository.save(car);
+        }
+        throw new TripNotFoundException("Car not found with ID: " + cnr);
+    }
+
     /**
      * Reads a specific trip file and publishes its data to Kafka, simulating real-time speed.
      *
@@ -161,6 +211,7 @@ public class DataSimulatorService {
 
         CsvMapper mapper = new CsvMapper();
         CsvSchema schema = CsvSchema.emptySchema().withHeader();
+        String tripNumber = "";
 
         // Process the file line-by-line to avoid high memory usage.
         try (FileInputStream fis = new FileInputStream(tripFile.toFile())) {
@@ -173,10 +224,17 @@ public class DataSimulatorService {
                 throw new TripNotFoundException("Trip file is empty: " + tripFile);
             }
             long currentRow = 0;
-
-            log.info("Starting simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
-            produceMessages.produceMessageByTopic(cabStatusTopicName, "STARTING CAR NO = " + carNumber + " TRIP ID = " + tripId);
-
+            tripNumber = LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("yyyyMMdd_HHmmssSSS")
+            ) + "_" + tripId;
+            log.info("Starting simulation for Vehicle: " +  carNumber+ " Trip :" + tripNumber);
+            startTrip(Integer.valueOf(carNumber),tripNumber);
+            TripStatusMessage tripStatusMessage = new TripStatusMessage();
+            tripStatusMessage.setCnr(Integer.valueOf(carNumber));
+            tripStatusMessage.setTripNumber(tripNumber);
+            tripStatusMessage.setTripStatus(true);
+            tripStatusMessage.setTimestamp(Instant.now().toString());
+            produceMessages.produceMessageByTopic(cabStatusTopicName, tripStatusMessage);
 
             while (it.hasNext()) {
                 TripRow row = it.next();
@@ -185,6 +243,7 @@ public class DataSimulatorService {
                 // Enrich the row data
                 row.setCarId(carNumber);
                 row.setTimestamp(Instant.now().toString());
+                row.setTripNumber(tripNumber);
                 double completionPercent = ((double) currentRow / totalRows) * 100;
                 row.setTripCompletion(completionPercent);
 
@@ -201,7 +260,7 @@ public class DataSimulatorService {
             log.error("Could not parse target_speed for a row in trip " + tripId, (Path) e);
         }
         finally {
-            produceMessages.produceMessageByTopic(cabStatusTopicName, "ENDING CAR NO = " + carNumber + " TRIP ID = " + tripId);
+            endTrip(Integer.valueOf(carNumber));
             log.info("Finished simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
         }
 
