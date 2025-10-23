@@ -189,7 +189,7 @@ public class DataSimulatorService {
                 row.setTripCompletion(completionPercent);
 
                 // Send the message
-                produceMessages.produceMessageByTopicAndKey(cabLocationTopicName, carNumber, row.toString());
+                produceMessages.produceMessageByTopicAndKey(cabLocationTopicName, carNumber, row);
 
                 // Simulate the time delay
                 simulateTimeDelay(Double.parseDouble(row.getTargetSpeed()));

@@ -9,9 +9,9 @@ import com.driveGuard.dataProducer.AppLogger;
 public class ProduceMessages {
     private static final AppLogger log = AppLogger.getLogger(ProduceMessages.class);
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public ProduceMessages(KafkaTemplate<String, String> kafkaTemplate) {
+    public ProduceMessages(KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 
@@ -19,7 +19,7 @@ public class ProduceMessages {
         kafkaTemplate.send(topic, message);
     }
 
-    public void produceMessageByTopicAndKey(String topic, String key, String message) {
+    public void produceMessageByTopicAndKey(String topic, String key, Object message) {
         kafkaTemplate.send(topic, key, message);
     }
 
