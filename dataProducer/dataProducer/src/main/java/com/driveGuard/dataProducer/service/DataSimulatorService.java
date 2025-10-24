@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import com.driveGuard.dataProducer.dto.message.TripStatusMessage;
 import com.driveGuard.dataProducer.entity.Car;
+import com.driveGuard.dataProducer.entity.Trip;
 import com.driveGuard.dataProducer.repository.CarRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,11 +51,14 @@ public class DataSimulatorService {
 
     private final CarRepository carRepository;
 
+    private final TripService tripService;
+
     Random r;
 
-    public DataSimulatorService(ProduceMessages produceMessages,CarRepository carRepository) {
+    public DataSimulatorService(ProduceMessages produceMessages,CarRepository carRepository,TripService tripService) {
         this.produceMessages = produceMessages;
         this.carRepository = carRepository;
+        this.tripService = tripService;
         r = new Random();
     }
 
@@ -158,12 +162,21 @@ public class DataSimulatorService {
             }
             car.setIsActiveTrip(true);
             car.setActiveTripNumber(tripNumber);
-            // TODO: CREATE A NEW TRIP RECORD IN THE TRIP TABLE
+
+
+            // ADDING NEW TRIP TO TRIP TABLE
+            Trip trip = new Trip();
+            trip.setCar(car);
+            trip.setTripNumber(tripNumber);
+            trip.setStartTime(Instant.now().toString());
+            tripService.addTrip(trip);
+
             return carRepository.save(car);
         }
         throw new TripNotFoundException("Car not found with ID: " + cnr);
     }
 
+    @Transactional
     public Car endTrip(Integer cnr) {
         Optional<Car> optionalCar = carRepository.findById(cnr);
         if (optionalCar.isPresent()) {
@@ -177,13 +190,15 @@ public class DataSimulatorService {
             tripStatusMessage.setCnr(car.getCnr());
             tripStatusMessage.setTripNumber(car.getActiveTripNumber());
             tripStatusMessage.setTripStatus(false);
-            tripStatusMessage.setTimestamp(Instant.now().toString());
 
-            produceMessages.produceMessageByTopic(cabStatusTopicName, tripStatusMessage);
-
+            // ENDING THE TRIP
+            tripService.updateTripEndTime(car.getActiveTripNumber());
             car.setIsActiveTrip(false);
             car.setActiveTripNumber(null);
-            // TODO: UPDATE THE TRIP RECORD IN THE TRIP TABLE TO MARK IT AS COMPLETED
+
+            tripStatusMessage.setTimestamp(Instant.now().toString());
+            produceMessages.produceMessageByTopic(cabStatusTopicName, tripStatusMessage);
+
             return carRepository.save(car);
         }
         throw new TripNotFoundException("Car not found with ID: " + cnr);

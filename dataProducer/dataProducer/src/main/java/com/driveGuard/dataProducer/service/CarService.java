@@ -63,10 +63,12 @@ public class CarService {
     }
 
     // Save a new car
+    @Transactional
     public Car saveCar(Car car) {
         return carRepository.save(car);
     }
 
+    @Transactional
     public Car endTrip(Integer cnr) {
        return dataSimulatorService.endTrip(cnr);
     }
@@ -147,11 +149,13 @@ public class CarService {
         }
     }
 
+    @Transactional
     public void forceStopTripDataSimulationByCarId(Car car)  {
        // Implementation for stopping trip data simulation for a specific car
         endTrip(car.getCnr());
     }
 
+    @Transactional
     public Car stopTripDataSimulationByCarId(Integer carId)  {
         // Implementation for stopping trip data simulation for a specific car
         return  endTrip(carId);

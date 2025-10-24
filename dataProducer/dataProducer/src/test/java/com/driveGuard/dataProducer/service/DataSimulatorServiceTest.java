@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class DataSimulatorServiceTest {
@@ -31,6 +30,9 @@ class DataSimulatorServiceTest {
     @Mock
     private CarRepository carRepository;
 
+    @Mock
+    private TripService tripService;
+
     // JUnit will create and clean up this temporary directory for us
     @TempDir
     Path tempDir;
@@ -42,7 +44,7 @@ class DataSimulatorServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        dataSimulatorService = new DataSimulatorService(produceMessages, carRepository);
+        dataSimulatorService = new DataSimulatorService(produceMessages, carRepository,tripService);
 
         // Inject all @Value fields
         ReflectionTestUtils.setField(dataSimulatorService, "dataSimulatorDirectory", tempDir.toString());

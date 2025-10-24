@@ -15,12 +15,17 @@ public class Trip {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer tripId;
+
     @NotNull(message = "Trip Number cannot be null")
+    @Column(unique = true)
     private String tripNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cnr")
     @NotNull(message = "Car cannot be null")
     private Car car;
+
     private String startTime;
+
     private String endTime;
 }

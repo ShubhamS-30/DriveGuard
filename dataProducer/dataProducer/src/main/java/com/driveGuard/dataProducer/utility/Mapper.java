@@ -8,15 +8,13 @@ import com.driveGuard.dataProducer.entity.Trip;
 import com.driveGuard.dataProducer.entity.TripRow;
 import com.driveGuard.dataProducer.service.CarService;
 import com.driveGuard.dataProducer.service.DataSimulatorService;
+import org.springframework.stereotype.Service;
 
+@Service
 public class Mapper {
 
-    private final CarService carService;
-    private final DataSimulatorService dataSimulatorService;
 
-    Mapper(CarService carService, DataSimulatorService dataSimulatorService) {
-        this.carService = carService;
-        this.dataSimulatorService = dataSimulatorService;
+    Mapper() {
     }
 
     public TripRowDTO TripRowToTripRowDTO(TripRow tripRow){

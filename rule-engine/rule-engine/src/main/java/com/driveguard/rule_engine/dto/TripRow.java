@@ -46,8 +46,13 @@ public class TripRow {
 
     private String elevationDiff;
 
+    @NotNull(message = "Car Id cannot be null")
     private String carId;
 
+    @NotNull(message = "Trip Number cannot be null")
+    private String tripNumber;
+
+    @NotNull(message = "Timestamp cannot be null")
     private String timestamp;
 
     @NotNull(message = "Trip completion cannot be null")
