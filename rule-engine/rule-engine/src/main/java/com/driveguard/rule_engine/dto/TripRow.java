@@ -16,35 +16,35 @@ public class TripRow {
 
     private String longitude;
 
-    private String targetSpeed;
+    private String target_speed;
 
-    private String wayMaxspeed;
+    private String way_Maxspeed;
 
-    private String speedOsrm;
+    private String speed_osrm;
 
     private String elevation;
 
-    private String fwdAzimuth;
+    private String fwd_azimuth;
 
-    private String wayType;
+    private String way_type;
 
-    private String waySurface;
+    private String way_surface;
 
-    private String nodeIntersection;
+    private String node_intersection;
 
-    private String nodeRailway;
+    private String node_railway;
 
-    private String nodeCrossing;
+    private String node_crossing;
 
-    private String nodeHighway;
+    private String node_highway;
 
-    private String nodeStop;
+    private String node_stop;
 
-    private String startStop;
+    private String start_stop;
 
-    private String azimuthDiff;
+    private String azimuth_diff;
 
-    private String elevationDiff;
+    private String elevation_diff;
 
     @NotNull(message = "Car Id cannot be null")
     private String carId;

@@ -21,13 +21,12 @@ public class AppLogger {
         logger.info(message);
     }
 
-    // FIX 1: Use SLF4J's parameterized logging to include the tripId.
+
     public void warn(String message, String tripId) {
         // The {} is a placeholder that will be replaced by tripId.
         logger.warn(message + " [TripID: {}]", tripId);
     }
 
-    // FIX 2: Overload the error method to accept a Throwable.
     // This is the standard and correct way to log exceptions.
     public void error(String message, Throwable throwable) {
         logger.error(message, throwable);
