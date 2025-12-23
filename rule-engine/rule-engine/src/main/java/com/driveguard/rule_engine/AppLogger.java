@@ -22,9 +22,9 @@ public class AppLogger {
     }
 
 
-    public void warn(String message, String tripId) {
+    public void warn(String message) {
         // The {} is a placeholder that will be replaced by tripId.
-        logger.warn(message + " [TripID: {}]", tripId);
+        logger.warn(message);
     }
 
     // This is the standard and correct way to log exceptions.
@@ -34,8 +34,7 @@ public class AppLogger {
 
     // You can keep this method if you sometimes need to log an error with a file path.
     public void error(String message, Path tripFile) {
-        // Also uses a placeholder for the path.
-        logger.error(message + " [File: {}]", tripFile);
+        logger.error(String.format("%s [File: %s]", message, tripFile));
     }
 
     public void debug(String message) {

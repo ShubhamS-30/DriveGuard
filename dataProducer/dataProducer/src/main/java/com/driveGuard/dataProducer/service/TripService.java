@@ -31,7 +31,7 @@ public class TripService
     public TripDTO getTripByTripNumber(String tripNumber){
         Optional<Trip> tripOptional = tripRepository.getTripByTripNumber(tripNumber);
         if(tripOptional.isEmpty()){
-            throw new TripNotFoundException("TRIP WITH ID : " + tripNumber + " NOT FOUND.");
+            throw new TripNotFoundException(String.format("TRIP WITH ID : %s NOT FOUND.", tripNumber));
         }
         return mapper.tripTOTripDTO(tripOptional.get());
     }
@@ -39,7 +39,7 @@ public class TripService
     public TripDTO updateTripEndTime(String tripNumber){
         Optional<Trip> tripOptional = tripRepository.getTripByTripNumber(tripNumber);
         if(tripOptional.isEmpty()){
-            throw new TripNotFoundException("TRIP WITH ID : " + tripNumber + " NOT FOUND.");
+            throw new TripNotFoundException(String.format("TRIP WITH ID : %s NOT FOUND.", tripNumber));
         }
         Trip trip = tripOptional.get();
         trip.setEndTime(Instant.now().toString());
