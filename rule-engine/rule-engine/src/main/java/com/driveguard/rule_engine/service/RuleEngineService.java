@@ -3,6 +3,7 @@ package com.driveguard.rule_engine.service;
 import com.driveguard.rule_engine.AppLogger;
 import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.dto.TripRow;
+import com.driveguard.rule_engine.dto.VehicleState;
 import com.driveguard.rule_engine.entity.RuleConfig;
 import com.driveguard.rule_engine.repository.RuleConfigRepository;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,8 @@ public class RuleEngineService {
 
     List<RuleConfig> dbRules;
 
+    private static final double DEFAULT_SUPPRESSION_INTERVAL_MS = 20000.0;
+
     public RuleEngineService(List<RuleStrategy> strategies, RuleConfigRepository ruleConfigRepository) {
         this.ruleConfigRepository = ruleConfigRepository;
         // Load rules from DB once at startup
@@ -34,12 +37,16 @@ public class RuleEngineService {
         return this.ruleConfigRepository.findAll();
     }
 
-    public Optional<Alert> processRules(String vehicleId, TripRow row){
+    public Optional<Alert> processRules(String vehicleId, TripRow row, VehicleState state){
+
+
 
         for (var config : dbRules) {
+            if (!config.isEnabled()) continue;
+
             String className = config.getRuleName();
 
-            // 2. Check if the class exists in our Strategy Map
+            // Check if the class exists in our Strategy Map
             RuleStrategy strategy = ruleStrategyMap.get(className);
 
             if (strategy == null) {
@@ -47,10 +54,19 @@ public class RuleEngineService {
                 continue;
             }
 
-            // 3. Only execute if enabled in DB
-            if (config.isEnabled()) {
-                Optional<Alert> alert = strategy.evaluate(vehicleId, row);
-                if (alert.isPresent()) return alert;
+            // Check Per-Rule Suppression
+            Long lastTriggered = state.getLastTriggeredMap().get(className);
+            long currentTime = System.currentTimeMillis();
+            if (lastTriggered != null && (currentTime - lastTriggered < DEFAULT_SUPPRESSION_INTERVAL_MS)) {
+                continue;
+            }
+
+            // Evaluate Rule
+            Optional<Alert> alert = strategy.evaluate(vehicleId, row, state);
+            if (alert.isPresent()) {
+                // 3. Update State on Trigger
+                state.getLastTriggeredMap().put(className, currentTime);
+                return alert;
             }
         }
         return Optional.empty();

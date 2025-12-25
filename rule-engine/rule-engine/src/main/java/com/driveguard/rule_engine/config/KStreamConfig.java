@@ -2,18 +2,20 @@ package com.driveguard.rule_engine.config;
 
 import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.dto.TripRow;
+import com.driveguard.rule_engine.dto.VehicleState;
 import com.driveguard.rule_engine.service.RuleEngineService;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.tomcat.util.digester.Rule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.support.serializer.JsonSerde;
+
+import java.util.Optional;
 
 @Configuration
 @EnableKafkaStreams
@@ -37,55 +39,44 @@ public class KStreamConfig {
      * Defines the KStreams topology for the rule engine.
      */
     @Bean
-    public KTable<String, Alert> kStreamTopology(StreamsBuilder streamsBuilder){
-
+    public KTable<String, VehicleState> kStreamTopology(StreamsBuilder streamsBuilder) {
         KStream<String, TripRow> locationStream = streamsBuilder.stream(cabLocationTopicName,
                 Consumed.with(Serdes.String(), new JsonSerde<>(TripRow.class)));
 
-        KGroupedStream<String, TripRow> groupedByVehicle = locationStream.groupByKey();
+        return locationStream.groupByKey()
+                .aggregate(
+                        VehicleState::new, // Initializer
+                        (vehicleId, newRow, currentState) -> {
+                            // A. Run rules and get potential alert
+                            Optional<Alert> alert = ruleEngineService.processRules(vehicleId, newRow, currentState);
 
-        KTable<String, Alert> alertTable = groupedByVehicle.aggregate(
-                () -> null,
-                (vehicleId, newRow, previousAlert) -> {
+                            // B. Update state for the NEXT message
+                            currentState.setLastAlert(alert.orElse(null));
+                            if (newRow.getTarget_speed() != null) {
+                                currentState.setPreviousTripRow(newRow);
+                            }
 
-                    return ruleEngineService.processRules(vehicleId, newRow).orElse(null);
-//                    try {
-//                        // --- SPEEDING RULE (STATELESS) ---
-//                        if (newRow.getTarget_speed() != null && newRow.getSpeed_osrm() != null) {
-//                            double currentSpeed = Double.parseDouble(newRow.getTarget_speed());
-//                            double speedLimit = Double.parseDouble(newRow.getSpeed_osrm());
-//
-//                            if (currentSpeed > speedLimit) {
-//                                log.info("SPEEDING ALERT for Vehicle:" + vehicleId );
-//                                String details = String.format("Speeding: %.0f km/h in a %.0f km/h zone.", currentSpeed, speedLimit);
-//                                return new Alert(vehicleId, "SPEEDING", details, System.currentTimeMillis(), Double.parseDouble(newRow.getLatitude()), Double.parseDouble(newRow.getLongitude()));
-//                            }
-//                        }
-//                        // --- UNUSUAL STOP RULE (STATELESS) ---
-//                        if (newRow.getTarget_speed() != null && "0.0".equals(newRow.getTarget_speed())) {
-//                            if ("motorway".equals(newRow.getWay_type())) {
-//                                String details = "Vehicle stopped on a motorway.";
-//                                return new Alert(vehicleId, "UNUSUAL_STOP", details, System.currentTimeMillis(), Double.parseDouble(newRow.getLatitude()), Double.parseDouble(newRow.getLongitude()));
-//                            }
-//                        }
-//                    } catch (NumberFormatException e) {
-//                        log.error("Failed to parse speed data for vehicle: " + vehicleId, e);
-//                    }
-//                    return null;
-                },
-                // We must be more specific and disable caching.
-                Materialized.<String, Alert, KeyValueStore<Bytes, byte[]>>as("alert-state-store") // Give the store a name
-                        .withKeySerde(Serdes.String())
-                        .withValueSerde(new JsonSerde<>(Alert.class))
-                        .withCachingDisabled() // <-- This forces the KTable to emit all changes
-        );
+                            return currentState;
+                        },
+                        Materialized.<String, VehicleState, KeyValueStore<Bytes, byte[]>>as("rule-state-store")
+                                .withKeySerde(Serdes.String())
+                                .withValueSerde(new JsonSerde<>(VehicleState.class))
+                                .withCachingDisabled()
+                );
+    }
 
-        // 4. Publish results to the 'anomaly_alerts' topic
-        alertTable.toStream()
-                .filter((key, alert) -> alert != null) // Filter out all the 'null' (no-alert) messages
-                .to(cabAlertTopicName, Produced.with(Serdes.String(), new JsonSerde<>(Alert.class)));
+    /**
+     * Publishes alerts derived from the vehicle state table.
+     */
+    @Bean
+    public KStream<String, Alert> publishAlerts(KTable<String, VehicleState> vehicleStateTable) {
+        KStream<String, Alert> alertStream = vehicleStateTable.toStream()
+                .filter((key, state) -> state.getLastAlert() != null) // Only pass messages with alerts:
+                .mapValues(VehicleState::getLastAlert);
 
+        // Route the alerts to the destination Kafka topic
+        alertStream.to(cabAlertTopicName, Produced.with(Serdes.String(), new JsonSerde<>(Alert.class)));
 
-        return alertTable;
+        return alertStream;
     }
 }

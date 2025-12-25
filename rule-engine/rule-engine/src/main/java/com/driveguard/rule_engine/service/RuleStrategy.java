@@ -2,6 +2,7 @@ package com.driveguard.rule_engine.service;
 
 import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.dto.TripRow;
+import com.driveguard.rule_engine.dto.VehicleState;
 
 import java.util.Optional;
 
@@ -14,5 +15,5 @@ public interface RuleStrategy {
      * @param row The current GPS/Trip data point.
      * @return An Optional containing an Alert if the rule is triggered, otherwise empty.
      */
-    Optional<Alert> evaluate(String vehicleId, TripRow row);
+    Optional<Alert> evaluate(String vehicleId, TripRow row, VehicleState state);
 }
