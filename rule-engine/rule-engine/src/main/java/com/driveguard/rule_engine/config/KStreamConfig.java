@@ -27,14 +27,16 @@ public class KStreamConfig {
     @Value("${data.cab.location.topic.name}")
     private String cabLocationTopicName;
 
-    @Value("${data.cab.alert.topic.name}") // You'll need to add this to application.properties
+    @Value("${data.cab.alert.topic.name}")
     private String cabAlertTopicName;
 
     private final RuleEngineService ruleEngineService;
+    private static final String STATE_STORE_NAME = "rule-state-store";
 
     public KStreamConfig(RuleEngineService ruleEngineService) {
         this.ruleEngineService = ruleEngineService;
     }
+
     /**
      * Defines the KStreams topology for the rule engine.
      */
@@ -52,13 +54,11 @@ public class KStreamConfig {
 
                             // B. Update state for the NEXT message
                             currentState.setLastAlert(alert.orElse(null));
-                            if (newRow.getTarget_speed() != null) {
-                                currentState.setPreviousTripRow(newRow);
-                            }
+                            currentState.setPreviousTripRow(newRow);
 
                             return currentState;
                         },
-                        Materialized.<String, VehicleState, KeyValueStore<Bytes, byte[]>>as("rule-state-store")
+                        Materialized.<String, VehicleState, KeyValueStore<Bytes, byte[]>>as(STATE_STORE_NAME)
                                 .withKeySerde(Serdes.String())
                                 .withValueSerde(new JsonSerde<>(VehicleState.class))
                                 .withCachingDisabled()

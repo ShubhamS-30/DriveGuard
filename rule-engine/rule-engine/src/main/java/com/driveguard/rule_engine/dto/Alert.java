@@ -12,7 +12,7 @@ public class Alert {
     // The ID of the vehicle this alert is for
     private String vehicleId;
 
-    // The type of alert, e.g., "SPEEDING", "HARSH_BRAKING", "UNUSUAL_STOP"
+    // Name of the rule that generated the alert
     private String alertType;
 
     // A human-readable message explaining the alert
@@ -20,6 +20,9 @@ public class Alert {
 
     // The timestamp (in epoch milliseconds) when the alert was generated
     private long timestamp;
+
+    // The trip number associated with the alert
+    private String tripNumber;
 
     // The location where the alert occurred
     private double latitude;

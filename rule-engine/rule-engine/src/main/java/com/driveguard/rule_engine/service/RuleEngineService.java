@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class RuleEngineService {
-    private static final AppLogger log  = AppLogger.getLogger(RuleEngineService.class);
+    private static final AppLogger log = AppLogger.getLogger(RuleEngineService.class);
 
-    private final Map<String,RuleStrategy> ruleStrategyMap;
+    private final Map<String, RuleStrategy> ruleStrategyMap;
     private final RuleConfigRepository ruleConfigRepository;
 
     List<RuleConfig> dbRules;
@@ -33,12 +33,11 @@ public class RuleEngineService {
                 .collect(Collectors.toMap(s -> s.getClass().getSimpleName(), s -> s));
     }
 
-    private List<RuleConfig> loadRulesFromDb(){
+    private List<RuleConfig> loadRulesFromDb() {
         return this.ruleConfigRepository.findAll();
     }
 
-    public Optional<Alert> processRules(String vehicleId, TripRow row, VehicleState state){
-
+    public Optional<Alert> processRules(String vehicleId, TripRow row, VehicleState state) {
 
 
         for (var config : dbRules) {
@@ -50,7 +49,7 @@ public class RuleEngineService {
             RuleStrategy strategy = ruleStrategyMap.get(className);
 
             if (strategy == null) {
-                log.warn(String.format("WARNING: Rule logic for %s not found in Java code! Check class names.",className));
+                log.warn(String.format("WARNING: Rule logic for %s not found in Java code! Check class names.", className));
                 continue;
             }
 
@@ -66,6 +65,10 @@ public class RuleEngineService {
             if (alert.isPresent()) {
                 // 3. Update State on Trigger
                 state.getLastTriggeredMap().put(className, currentTime);
+
+                // save alert in db
+
+                // return alert
                 return alert;
             }
         }
