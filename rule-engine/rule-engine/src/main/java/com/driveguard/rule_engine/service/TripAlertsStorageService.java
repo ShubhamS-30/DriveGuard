@@ -7,6 +7,7 @@ import com.driveguard.rule_engine.repository.TripAlertsRepository;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,8 +52,10 @@ public class TripAlertsStorageService {
     }
 
     /**
-     * Periodically flushes the buffer to MySQL
+     * Periodically flushes the buffer every 5 seconds.
+     * This handles cases where the batch size isn't reached quickly.
      */
+    @Scheduled(fixedRate = 5000)
     @Transactional
     public void flushBuffer() {
         if (buffer.isEmpty()) return;
