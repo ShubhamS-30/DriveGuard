@@ -17,4 +17,10 @@ public class TripDTO {
     private CarDTO car;
     private String startTime;
     private String endTime;
+
+    private String startLocationLatitude;
+    private String startLocationLongitude;
+    private String endLocationLatitude;
+    private String endLocationLongitude;
+    private Double totalDistanceKm;
 }

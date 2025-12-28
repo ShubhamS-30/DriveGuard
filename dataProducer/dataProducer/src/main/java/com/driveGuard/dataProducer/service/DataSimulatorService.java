@@ -55,7 +55,7 @@ public class DataSimulatorService {
 
     Random r;
 
-    public DataSimulatorService(ProduceMessages produceMessages,CarRepository carRepository,TripService tripService) {
+    public DataSimulatorService(ProduceMessages produceMessages, CarRepository carRepository, TripService tripService) {
         this.produceMessages = produceMessages;
         this.carRepository = carRepository;
         this.tripService = tripService;
@@ -153,11 +153,11 @@ public class DataSimulatorService {
     }
 
     // Start a trip
-    public Car startTrip(Integer cnr,String tripNumber) {
+    public void startTrip(Integer cnr, String tripNumber) {
         Optional<Car> optionalCar = carRepository.findById(cnr);
         if (optionalCar.isPresent()) {
             Car car = optionalCar.get();
-            if(Boolean.TRUE.equals(car.getIsActiveTrip())){
+            if (Boolean.TRUE.equals(car.getIsActiveTrip())) {
                 throw new TripNotFoundException("Trip is already active for Car ID: " + cnr);
             }
             car.setIsActiveTrip(true);
@@ -171,9 +171,11 @@ public class DataSimulatorService {
             trip.setStartTime(Instant.now().toString());
             tripService.addTrip(trip);
 
-            return carRepository.save(car);
+            carRepository.save(car);
         }
-        throw new TripNotFoundException("Car not found with ID: " + cnr);
+        else{
+            throw new TripNotFoundException("Car not found with ID: " + cnr);
+        }
     }
 
     @Transactional
@@ -182,7 +184,7 @@ public class DataSimulatorService {
         if (optionalCar.isPresent()) {
             Car car = optionalCar.get();
 
-            if(Boolean.FALSE.equals(car.getIsActiveTrip())){
+            if (Boolean.FALSE.equals(car.getIsActiveTrip())) {
                 throw new TripNotFoundException("Trip is not active for Car ID: " + cnr);
             }
 
@@ -235,25 +237,39 @@ public class DataSimulatorService {
             try (Stream<String> lines = Files.lines(tripFile)) {
                 totalRows = lines.count() - 1;
             } // Get total for percentage calculation, -1 for
-            if(totalRows == 0){
+            if (totalRows == 0) {
                 throw new TripNotFoundException("Trip file is empty: " + tripFile);
             }
             long currentRow = 0;
             tripNumber = LocalDateTime.now().format(
                     DateTimeFormatter.ofPattern("yyyyMMdd_HHmmssSSS")
             ) + "_" + tripId;
-            log.info("Starting simulation for Vehicle: " +  carNumber+ " Trip :" + tripNumber);
-            startTrip(Integer.valueOf(carNumber),tripNumber);
+            log.info("Starting simulation for Vehicle: " + carNumber + " Trip :" + tripNumber);
+            startTrip(Integer.valueOf(carNumber), tripNumber);
             TripStatusMessage tripStatusMessage = new TripStatusMessage();
             tripStatusMessage.setCnr(Integer.valueOf(carNumber));
             tripStatusMessage.setTripNumber(tripNumber);
             tripStatusMessage.setTripStatus(true);
             tripStatusMessage.setTimestamp(Instant.now().toString());
             produceMessages.produceMessageByTopic(cabStatusTopicName, tripStatusMessage);
-
+            TripRow firstRow = null;
+            TripRow lastRow = null;
+            double runningDistance = 0.0;
             while (it.hasNext()) {
                 TripRow row = it.next();
                 currentRow++;
+
+                if (firstRow == null) {
+                    firstRow = row;
+                    tripService.updateTripStartLocation(tripNumber, firstRow.getLatitude(), firstRow.getLongitude());
+                }
+                if (lastRow != null) {
+                    runningDistance += calculateDistance(
+                            Double.parseDouble(lastRow.getLatitude()), Double.parseDouble(lastRow.getLongitude()),
+                            Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())
+                    );
+                }
+                lastRow = row;
 
                 // Enrich the row data
                 row.setCarId(carNumber);
@@ -268,15 +284,18 @@ public class DataSimulatorService {
                 // Simulate the time delay
                 simulateTimeDelay(Double.parseDouble(row.getTargetSpeed()));
             }
+
+            if (lastRow != null) {
+                tripService.updateTripEndLocationAndDistance(tripNumber, lastRow.getLatitude(), lastRow.getLongitude(), runningDistance);
+            }
         } catch (InterruptedException e) {
             log.warn("Simulation for trip {} was interrupted.", tripId);
             Thread.currentThread().interrupt();
         } catch (NumberFormatException e) {
             log.error("Could not parse target_speed for a row in trip " + tripId, (Path) e);
-        }
-        finally {
+        } finally {
             endTrip(Integer.valueOf(carNumber));
-            log.info("Finished simulation for Vehicle: " +  carNumber+ " Trip :" + tripId);
+            log.info("Finished simulation for Vehicle: " + carNumber + " Trip :" + tripId);
         }
 
     }
@@ -301,6 +320,18 @@ public class DataSimulatorService {
             // If the car is stationary, pause for a default interval (e.g., 1 second)
             Thread.sleep(1000);
         }
+    }
+
+    // Haversine formula to calculate distance between two lat/lon points
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Earth radius in km
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
 }

@@ -3,13 +3,11 @@ package com.driveguard.rule_engine.service;
 import com.driveguard.rule_engine.AppLogger;
 import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.entity.TripAlerts;
-import com.driveguard.rule_engine.repository.TripAlertsRepository;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,30 +17,23 @@ import java.util.List;
 public class TripAlertsStorageService {
     private static final AppLogger log = AppLogger.getLogger(TripAlertsStorageService.class);
 
-    private final TripAlertsRepository tripAlertsRepository;
-
     // Thread-safe buffer to prevent data loss during high-volume streaming
     private final List<TripAlerts> buffer = Collections.synchronizedList(new ArrayList<>());
 
     @Value("${data.alerts.batch.size}")
     private int batchSize;
 
-    public TripAlertsStorageService(TripAlertsRepository tripAlertsRepository) {
-        this.tripAlertsRepository = tripAlertsRepository;
+    private final AlertPersistenceService persistenceService;
+
+    public TripAlertsStorageService(AlertPersistenceService persistenceService) {
+        this.persistenceService = persistenceService;
     }
 
     @KafkaListener(topics = "${data.cab.alert.topic.name}", groupId = "alert-storage-group")
     public void consumeAndBufferAlert(Alert alert) {
 
         // Convert Kafka DTO to MySQL Entity
-        TripAlerts entity = TripAlerts.builder()
-                .vehicleId(alert.getVehicleId())
-                .tripNumber(alert.getTripNumber())
-                .alertType(alert.getAlertType())
-                .details(alert.getDetails())
-                .latitude(alert.getLatitude())
-                .longitude(alert.getLongitude())
-                .build();
+        TripAlerts entity = mapToEntity(alert);
 
         buffer.add(entity);
 
@@ -51,12 +42,22 @@ public class TripAlertsStorageService {
         }
     }
 
+    private TripAlerts mapToEntity(Alert alert) {
+        return TripAlerts.builder()
+                .vehicleId(alert.getVehicleId())
+                .tripNumber(alert.getTripNumber()) // Use the field from the DTO!
+                .alertType(alert.getAlertType())
+                .details(alert.getDetails())
+                .latitude(alert.getLatitude())
+                .longitude(alert.getLongitude())
+                .build();
+    }
+
     /**
      * Periodically flushes the buffer every 5 seconds.
      * This handles cases where the batch size isn't reached quickly.
      */
     @Scheduled(fixedRate = 5000)
-    @Transactional
     public void flushBuffer() {
         if (buffer.isEmpty()) return;
 
@@ -68,7 +69,7 @@ public class TripAlertsStorageService {
 
         try {
             log.info(String.format("Performing MySQL batch insert for %s alerts.", toSave.size()));
-            tripAlertsRepository.saveAll(toSave); // Hibernate uses rewriteBatchedStatements=true here
+            persistenceService.saveAlertBatch(toSave); // Hibernate uses rewriteBatchedStatements=true here
         } catch (Exception e) {
             log.error("Failed to persist alert batch to MySQL", e);
         }

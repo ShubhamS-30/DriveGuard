@@ -28,4 +28,10 @@ public class Trip {
     private String startTime;
 
     private String endTime;
+
+    private String startLocationLatitude;
+    private String startLocationLongitude;
+    private String endLocationLatitude;
+    private String endLocationLongitude;
+    private Double totalDistanceKm;
 }
