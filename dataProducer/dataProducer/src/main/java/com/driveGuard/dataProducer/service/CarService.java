@@ -27,7 +27,6 @@ public class CarService {
     private static final AppLogger log = AppLogger.getLogger(CarService.class);
 
     private final CarRepository carRepository;
-    private final ProduceMessages produceMessages;
     private final DataSimulatorService dataSimulatorService;
     private final ExecutorService executorService;
 
@@ -42,9 +41,8 @@ public class CarService {
 
     private final Semaphore tripSemaphore;
 
-    public CarService(CarRepository carRepository, ProduceMessages produceMessages,DataSimulatorService dataSimulatorService,@Value("${data.simulation.max.concurrent.trips}") Integer maxConcurrentTrips) {
+    public CarService(CarRepository carRepository, DataSimulatorService dataSimulatorService, @Value("${data.simulation.max.concurrent.trips}") Integer maxConcurrentTrips) {
         this.carRepository = carRepository;
-        this.produceMessages = produceMessages;
         this.dataSimulatorService = dataSimulatorService;
 
         // CREATE THREAD POOL AND SEMAPHORE ONLY ONCE
@@ -70,13 +68,13 @@ public class CarService {
 
     @Transactional
     public Car endTrip(Integer cnr) {
-       return dataSimulatorService.endTrip(cnr);
+        return dataSimulatorService.endTrip(cnr);
     }
 
     @Scheduled(cron = "0 * * * * *")
     public void startTripDataSimulationCron() {
         // This method can be scheduled to run at fixed intervals using @Scheduled annotation
-        log.info(Instant.now().toString() + " :: CRON JOB: Looking for available cars to start trips... ");
+        log.info(String.format("%s :: CRON JOB: Looking for available cars to start trips... ", Instant.now().toString()));
         List<Car> cars = carRepository.findByIsActiveTrip(false); // Find only inactive cars
 
         for (Car car : cars) {
@@ -100,22 +98,22 @@ public class CarService {
 
 
         } catch (TripNotFoundException e) {
-            log.error("TripNotFoundException for Car ID: {}" + carId, e);
+            log.error(String.format("TripNotFoundException for Car ID: %s", carId), e);
             throw e;
         } catch (Exception e) {
             // Ensure you handle potential exceptions from the simulation
-            log.error("An unexpected error occurred during simulation for Car ID: " + carId, (Path) e);
+            log.error(String.format("An unexpected error occurred during simulation for Car ID: %s", carId), (Path) e);
             // Attempt to clean up and end the trip if an error occurred
             try {
                 endTrip(carId);
             } catch (Exception cleanupEx) {
-                log.error("Failed to cleanup and end trip for Car ID: " + carId, (Path) cleanupEx);
+                log.error(String.format("Failed to cleanup and end trip for Car ID: %s", carId), (Path) cleanupEx);
                 throw cleanupEx;
             }
         } finally {
             tripSemaphore.release();
             stopTripDataSimulationByCarId(carId);
-            log.info("Semaphore released for Car ID: " + carId);
+            log.info(String.format("Semaphore released for Car ID: %s", carId));
         }
     }
 
@@ -131,10 +129,10 @@ public class CarService {
             try {
                 // Use your existing method to end the trip and send the Kafka message.
                 this.forceStopTripDataSimulationByCarId(car);
-                log.info("Successfully ended trip for Car ID: " + car.getCnr());
+                log.info(String.format("Successfully ended trip for Car ID: %s", car.getCnr()));
             } catch (Exception e) {
                 // Log an error but continue the shutdown process.
-                log.error("Error while ending trip for Car ID: " + car.getCnr(), e);
+                log.error(String.format("Error while ending trip for Car ID: %s", car.getCnr()), e);
             }
         }
 
@@ -150,14 +148,14 @@ public class CarService {
     }
 
     @Transactional
-    public void forceStopTripDataSimulationByCarId(Car car)  {
-       // Implementation for stopping trip data simulation for a specific car
+    public void forceStopTripDataSimulationByCarId(Car car) {
+        // Implementation for stopping trip data simulation for a specific car
         endTrip(car.getCnr());
     }
 
     @Transactional
-    public Car stopTripDataSimulationByCarId(Integer carId)  {
+    public Car stopTripDataSimulationByCarId(Integer carId) {
         // Implementation for stopping trip data simulation for a specific car
-        return  endTrip(carId);
+        return endTrip(carId);
     }
 }

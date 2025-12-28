@@ -25,9 +25,6 @@ class CarServiceTest {
     private CarRepository carRepository;
 
     @Mock
-    private ProduceMessages produceMessages;
-
-    @Mock
     private DataSimulatorService dataSimulatorService;
 
     private CarService carService;
@@ -35,7 +32,7 @@ class CarServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        carService = new CarService(carRepository, produceMessages, dataSimulatorService, 5);
+        carService = new CarService(carRepository, dataSimulatorService, 5);
         ReflectionTestUtils.setField(carService, "cabStatusTopicName", "test-topic");
         ReflectionTestUtils.setField(carService, "chanceOfTrip", 0.0); // default deterministic value
     }
@@ -148,7 +145,7 @@ class CarServiceTest {
     }
 
     @Test
-    void testStopTripDataSimulationByCarId_endsTripAndProducesMessage() throws IOException {
+    void testStopTripDataSimulationByCarId_endsTripAndProducesMessage() {
         int cnr = 1;
         Car before = new Car();
         before.setCnr(cnr);

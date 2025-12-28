@@ -67,6 +67,7 @@ public class TripService {
         trip.setEndLocationLatitude(endLocationLatitude);
         trip.setEndLocationLongitude(endLocationLongitude);
         trip.setTotalDistanceKm(totalDistanceKm);
+        trip.setEndTime(Instant.now().toString());
         tripRepository.save(trip);
     }
 }
