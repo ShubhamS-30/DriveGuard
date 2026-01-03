@@ -12,10 +12,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+import com.driveGuard.dataProducer.dto.TripRowDTO;
 import com.driveGuard.dataProducer.dto.message.TripStatusMessage;
 import com.driveGuard.dataProducer.entity.Car;
 import com.driveGuard.dataProducer.entity.Trip;
 import com.driveGuard.dataProducer.repository.CarRepository;
+import com.driveGuard.dataProducer.utility.Mapper;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -51,16 +53,19 @@ public class DataSimulatorService {
 
     private final TripService tripService;
 
+    private final Mapper mapper;
+
     Random r;
 
     // Inside DataSimulatorService
     private final Map<String, TripRow> lastKnownPositions = new ConcurrentHashMap<>();
     private final Map<String, Double> currentTripDistances = new ConcurrentHashMap<>();
 
-    public DataSimulatorService(ProduceMessages produceMessages, CarRepository carRepository, TripService tripService) {
+    public DataSimulatorService(ProduceMessages produceMessages, CarRepository carRepository, TripService tripService, Mapper mapper) {
         this.produceMessages = produceMessages;
         this.carRepository = carRepository;
         this.tripService = tripService;
+        this.mapper = mapper;
         r = new Random();
     }
 
@@ -86,7 +91,7 @@ public class DataSimulatorService {
         return folderNames;
     }
 
-    public List<TripRow> getTripDetailsFirst20Rows(String folderName, String tripFileName) throws IOException, TripNotFoundException {
+    public List<TripRowDTO> getTripDetailsFirst20Rows(String folderName, String tripFileName) throws IOException, TripNotFoundException {
         List<TripRow> rowsData = new ArrayList<>();
         Path tripFile = Paths.get(dataSimulatorDirectory, folderName, tripFileName);
         if (!Files.exists(tripFile)) {
@@ -106,7 +111,7 @@ public class DataSimulatorService {
                 }
             }
         }
-        return rowsData;
+        return this.mapper.tripRowListToTripRowDTOList(rowsData);
     }
 
     /**
@@ -197,7 +202,9 @@ public class DataSimulatorService {
             tripStatusMessage.setTripNumber(tripNumber);
             tripStatusMessage.setTripStatus(false);
             // ENDING THE TRIP
-            tripService.updateTripEndLocationAndDistance(tripNumber, lastPosition.getLatitude(), lastPosition.getLongitude(), distance);
+            String lastPositionLatitude = lastPosition != null ? lastPosition.getLatitude() : null;
+            String lastPositionLongitude = lastPosition != null ? lastPosition.getLongitude() : null;
+            tripService.updateTripEndLocationAndDistance(tripNumber, lastPositionLatitude, lastPositionLongitude, distance);
             car.setIsActiveTrip(false);
             car.setActiveTripNumber(null);
 

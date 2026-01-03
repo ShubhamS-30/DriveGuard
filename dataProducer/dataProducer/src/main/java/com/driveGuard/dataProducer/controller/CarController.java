@@ -3,6 +3,7 @@ package com.driveGuard.dataProducer.controller;
 import java.io.IOException;
 import java.util.List;
 
+import com.driveGuard.dataProducer.dto.CarDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,26 +32,26 @@ public class CarController {
 
     // Get all cars
     @GetMapping
-    public List<Car> getAllCars() {
+    public List<CarDTO> getAllCars() {
         return carService.getAllCars();
     }
 
     // Get car by ID
     @GetMapping("/{id}")
-    public Car getCarById(@PathVariable Integer id) {
+    public CarDTO getCarById(@PathVariable Integer id) {
         return carService.getCarById(id)
                 .orElseThrow(() -> new TripNotFoundException("Car not found with ID: " + id));
     }
 
     // Create a new car
     @PostMapping
-    public Car addCar(@RequestBody Car car) {
+    public CarDTO addCar(@RequestBody Car car) {
         return carService.saveCar(car);
     }
 
 
     @PutMapping("stopTrip/{id}")
-    public ResponseEntity<Car> putMethodName(@PathVariable("id") Integer carId) throws IOException {
+    public ResponseEntity<CarDTO> putMethodName(@PathVariable("id") Integer carId) throws IOException {
         return ResponseEntity.ok(carService.stopTripDataSimulationByCarId(carId));
     }
 }

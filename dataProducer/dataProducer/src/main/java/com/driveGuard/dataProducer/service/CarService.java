@@ -8,7 +8,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
+import com.driveGuard.dataProducer.dto.CarDTO;
 import com.driveGuard.dataProducer.utility.AppLogger;
+import com.driveGuard.dataProducer.utility.Mapper;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,6 +31,7 @@ public class CarService {
     private final CarRepository carRepository;
     private final DataSimulatorService dataSimulatorService;
     private final ExecutorService executorService;
+    private final Mapper mapper;
 
     @Value("${data.cab.status.topic.name}")
     private String cabStatusTopicName;
@@ -41,9 +44,10 @@ public class CarService {
 
     private final Semaphore tripSemaphore;
 
-    public CarService(CarRepository carRepository, DataSimulatorService dataSimulatorService, @Value("${data.simulation.max.concurrent.trips}") Integer maxConcurrentTrips) {
+    public CarService(CarRepository carRepository, DataSimulatorService dataSimulatorService, Mapper mapper,@Value("${data.simulation.max.concurrent.trips}") Integer maxConcurrentTrips) {
         this.carRepository = carRepository;
         this.dataSimulatorService = dataSimulatorService;
+        this.mapper = mapper;
 
         // CREATE THREAD POOL AND SEMAPHORE ONLY ONCE
         this.executorService = Executors.newCachedThreadPool();
@@ -51,19 +55,21 @@ public class CarService {
     }
 
     // Get all cars
-    public List<Car> getAllCars() {
-        return carRepository.findAll();
+    public List<CarDTO> getAllCars() {
+        return mapper.carListToCarDTOList(carRepository.findAll());
     }
 
     // Get car by ID
-    public Optional<Car> getCarById(Integer cnr) {
-        return carRepository.findById(cnr);
+    public Optional<CarDTO> getCarById(Integer cnr) {
+        Car car = carRepository.findById(cnr).orElse(null);
+        return Optional.ofNullable(mapper.carToCarDTO(car));
     }
 
     // Save a new car
     @Transactional
-    public Car saveCar(Car car) {
-        return carRepository.save(car);
+    public CarDTO saveCar(Car car) {
+        Car savedCar =  carRepository.save(car);
+        return mapper.carToCarDTO(savedCar);
     }
 
     @Transactional
@@ -154,8 +160,8 @@ public class CarService {
     }
 
     @Transactional
-    public Car stopTripDataSimulationByCarId(Integer carId) {
+    public CarDTO stopTripDataSimulationByCarId(Integer carId) {
         // Implementation for stopping trip data simulation for a specific car
-        return endTrip(carId);
+        return mapper.carToCarDTO(endTrip(carId));
     }
 }

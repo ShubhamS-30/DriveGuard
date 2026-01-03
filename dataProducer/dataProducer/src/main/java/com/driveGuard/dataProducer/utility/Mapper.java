@@ -10,6 +10,9 @@ import com.driveGuard.dataProducer.service.CarService;
 import com.driveGuard.dataProducer.service.DataSimulatorService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class Mapper {
 
@@ -17,7 +20,7 @@ public class Mapper {
     Mapper() {
     }
 
-    public TripRowDTO TripRowToTripRowDTO(TripRow tripRow){
+    public TripRowDTO tripRowToTripRowDTO(TripRow tripRow){
         TripRowDTO tripRowDTO = new TripRowDTO();
         tripRowDTO.setLatitude(tripRow.getLatitude());
         tripRowDTO.setLongitude(tripRow.getLongitude());
@@ -44,6 +47,9 @@ public class Mapper {
     }
 
     public CarDTO carToCarDTO(Car car){
+        if(car == null){
+            return null;
+        }
         CarDTO carDTO = new CarDTO();
         carDTO.setCnr(car.getCnr());
         carDTO.setManufacturer(car.getManufacturer());
@@ -65,5 +71,21 @@ public class Mapper {
         tripDTO.setStartTime(trip.getStartTime());
         tripDTO.setEndTime(trip.getEndTime());
         return tripDTO;
+    }
+
+    public List<CarDTO> carListToCarDTOList(List<Car> cars){
+        List<CarDTO> carDTOS = new ArrayList<>();
+        for (Car car : cars) {
+            carDTOS.add(carToCarDTO(car));
+        }
+        return carDTOS;
+    }
+
+    public List<TripRowDTO> tripRowListToTripRowDTOList(List<TripRow> tripRows){
+        List<TripRowDTO> tripRowDTOS = new ArrayList<>();
+        for (TripRow tripRow : tripRows) {
+            tripRowDTOS.add(tripRowToTripRowDTO(tripRow));
+        }
+        return tripRowDTOS;
     }
 }

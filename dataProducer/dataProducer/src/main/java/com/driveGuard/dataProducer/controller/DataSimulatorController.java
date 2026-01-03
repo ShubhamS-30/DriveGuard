@@ -3,6 +3,7 @@ package com.driveGuard.dataProducer.controller;
 import java.io.IOException;
 import java.util.List;
 
+import com.driveGuard.dataProducer.dto.TripRowDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +31,7 @@ public class DataSimulatorController {
     }
 
     @GetMapping("/car/{carNumber}/trip/{year}/{month}/{tripId}")
-    public List<TripRow> getTripDetails(
+    public List<TripRowDTO> getTripDetails(
             @PathVariable String carNumber,
             @PathVariable String year,
             @PathVariable String month,
