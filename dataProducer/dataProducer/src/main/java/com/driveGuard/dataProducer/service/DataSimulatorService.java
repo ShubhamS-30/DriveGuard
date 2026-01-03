@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import com.driveGuard.dataProducer.dto.TripRowDTO;
-import com.driveGuard.dataProducer.dto.message.TripStatusMessage;
+import com.driveGuard.dataProducer.dto.TripStatusMessage;
 import com.driveGuard.dataProducer.entity.Car;
 import com.driveGuard.dataProducer.entity.Trip;
 import com.driveGuard.dataProducer.repository.CarRepository;

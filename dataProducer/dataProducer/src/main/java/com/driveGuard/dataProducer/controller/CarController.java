@@ -1,14 +1,18 @@
 package com.driveGuard.dataProducer.controller;
 
-import java.io.IOException;
 import java.util.List;
 
 import com.driveGuard.dataProducer.dto.CarDTO;
+import com.driveGuard.dataProducer.dto.TripDTO;
+import com.driveGuard.dataProducer.service.TripService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,9 +34,12 @@ public class CarController {
 
     private final CarService carService;
 
+    private final TripService tripService;
+
     @Autowired
-    public CarController(CarService carService) {
+    public CarController(CarService carService, TripService tripService) {
         this.carService = carService;
+        this.tripService = tripService;
     }
 
     // Get all cars
@@ -93,7 +100,25 @@ public class CarController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @PutMapping("stopTrip/{id}")
-    public ResponseEntity<CarDTO> putMethodName(@PathVariable("id") Integer carId) throws IOException {
+    public ResponseEntity<CarDTO> putMethodName(@PathVariable("id") Integer carId) {
         return ResponseEntity.ok(carService.stopTripDataSimulationByCarId(carId));
+    }
+
+    // Get paginated trips for a specific car
+    @Operation(
+            summary = "Get Paginated Trips for Car",
+            description = "Retrieve paginated trip data for a specific Car by ID"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Trips retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Car or trips not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/{carId}/trips")
+    public ResponseEntity<Page<TripDTO>> getTripsByCarId(
+            @PathVariable Integer carId,
+            @ParameterObject Pageable pageable) {
+        // Spring parses ?page=0&size=10&sort=startTime,desc automatically
+        return ResponseEntity.ok(tripService.getTripsByCarId(carId, pageable));
     }
 }

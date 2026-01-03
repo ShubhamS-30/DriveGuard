@@ -1,4 +1,4 @@
-package com.driveGuard.dataProducer.dto.message;
+package com.driveGuard.dataProducer.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
