@@ -29,6 +29,7 @@ public class DangerousTurningRule implements RuleStrategy {
             double limit = Double.parseDouble(row.getSpeed_osrm());
             if (speed > limit && angle > TURNING_ANGLE_THRESHOLD) {
                 return Optional.of(new Alert(
+                        null,
                         vehicleId,
                         getRuleId(),
                         String.format("Sharp turn of %.1f degrees detected while speeding", angle),
@@ -39,7 +40,7 @@ public class DangerousTurningRule implements RuleStrategy {
                 ));
             }
         } catch (NumberFormatException ex) {
-            return Optional.of(new Alert(vehicleId, getRuleId(), String.format("Invalid number format %s", ex.getMessage()),
+            return Optional.of(new Alert(null,vehicleId, getRuleId(), String.format("Invalid number format %s", ex.getMessage()),
                     System.currentTimeMillis(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
         }
         return Optional.empty();

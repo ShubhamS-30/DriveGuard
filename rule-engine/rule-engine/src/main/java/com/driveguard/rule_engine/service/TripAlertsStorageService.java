@@ -1,6 +1,7 @@
 package com.driveguard.rule_engine.service;
 
 import com.driveguard.rule_engine.AppLogger;
+import com.driveguard.rule_engine.Mapper;
 import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.entity.TripAlerts;
 import jakarta.annotation.PreDestroy;
@@ -25,15 +26,18 @@ public class TripAlertsStorageService {
 
     private final AlertPersistenceService persistenceService;
 
-    public TripAlertsStorageService(AlertPersistenceService persistenceService) {
+    private final Mapper mapper;
+
+    public TripAlertsStorageService(AlertPersistenceService persistenceService, Mapper mapper) {
         this.persistenceService = persistenceService;
+        this.mapper = mapper;
     }
 
     @KafkaListener(topics = "${data.cab.alert.topic.name}", groupId = "alert-storage-group")
     public void consumeAndBufferAlert(Alert alert) {
 
         // Convert Kafka DTO to MySQL Entity
-        TripAlerts entity = mapToEntity(alert);
+        TripAlerts entity = mapper.mapToEntity(alert);
 
         buffer.add(entity);
 
@@ -42,16 +46,7 @@ public class TripAlertsStorageService {
         }
     }
 
-    private TripAlerts mapToEntity(Alert alert) {
-        return TripAlerts.builder()
-                .vehicleId(alert.getVehicleId())
-                .tripNumber(alert.getTripNumber()) // Use the field from the DTO!
-                .alertType(alert.getAlertType())
-                .details(alert.getDetails())
-                .latitude(alert.getLatitude())
-                .longitude(alert.getLongitude())
-                .build();
-    }
+
 
     /**
      * Periodically flushes the buffer every 5 seconds.

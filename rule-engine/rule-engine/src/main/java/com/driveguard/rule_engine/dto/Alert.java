@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Alert {
 
+    // Unique identifier for the alert
+    private Long id;
+
     // The ID of the vehicle this alert is for
     private String vehicleId;
 

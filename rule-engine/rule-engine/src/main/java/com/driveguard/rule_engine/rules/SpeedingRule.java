@@ -26,11 +26,11 @@ public class SpeedingRule implements RuleStrategy {
             double speed = Double.parseDouble(row.getTarget_speed());
             double limit = Double.parseDouble(row.getSpeed_osrm());
             if (speed > (limit + SPEEDING_THRESHOLD)) {
-                return Optional.of(new Alert(vehicleId, getRuleId(), String.format("Over Speeding detected with speed %s km/h in a %s km/h zone.", speed, limit),
+                return Optional.of(new Alert(null,vehicleId, getRuleId(), String.format("Over Speeding detected with speed %s km/h in a %s km/h zone.", speed, limit),
                         System.currentTimeMillis(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
             }
         } catch (NumberFormatException ex) {
-            return Optional.of(new Alert(vehicleId, getRuleId(), String.format("Invalid number format %s", ex.getMessage()),
+            return Optional.of(new Alert(null,vehicleId, getRuleId(), String.format("Invalid number format %s", ex.getMessage()),
                     System.currentTimeMillis(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
         }
 

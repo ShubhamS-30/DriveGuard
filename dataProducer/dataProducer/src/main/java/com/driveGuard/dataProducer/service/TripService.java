@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -80,10 +79,7 @@ public class TripService {
         // 1. Fetch paged results directly
         Page<Trip> tripPage = tripRepository.findByCarCnr(carId, pageable);
 
-        // 2. Map entities to DTOs
-        List<TripDTO> tripDTOList = mapper.tripListToTripDTOList(tripPage.getContent());
-
-        if (tripDTOList.isEmpty()) {
+        if (tripPage.isEmpty()) {
             throw new TripNotFoundException("NO MORE TRIPS FOUND.");
         }
 
