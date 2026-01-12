@@ -1,6 +1,7 @@
 package com.driveguard.rule_engine.config;
 
 import com.driveguard.rule_engine.dto.Alert;
+import com.driveguard.rule_engine.dto.TripRow;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +45,34 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, Alert> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(alertConsumerFactory());
+        return factory;
+    }
+
+    // ============ TripRow Consumer Configuration for Location Streaming ============
+
+    @Bean
+    public ConsumerFactory<String, TripRow> tripRowConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "location-stream-group");
+
+        JsonDeserializer<TripRow> deserializer = new JsonDeserializer<>(TripRow.class);
+        deserializer.setRemoveTypeHeaders(false);
+        deserializer.addTrustedPackages("com.driveguard.rule_engine.dto");
+        deserializer.setUseTypeHeaders(false);
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer
+        );
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TripRow> tripRowKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, TripRow> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(tripRowConsumerFactory());
         return factory;
     }
 }
