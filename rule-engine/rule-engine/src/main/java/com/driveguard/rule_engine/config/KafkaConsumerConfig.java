@@ -2,6 +2,7 @@ package com.driveguard.rule_engine.config;
 
 import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.dto.TripRow;
+import com.driveguard.rule_engine.dto.TripStatusMessage;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -75,4 +76,33 @@ public class KafkaConsumerConfig {
         factory.setConsumerFactory(tripRowConsumerFactory());
         return factory;
     }
+
+    // ============ TripStatusMessage Consumer Configuration for Trip Status Handling ============
+
+    @Bean
+    public ConsumerFactory<String, TripStatusMessage> tripStatusConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "trip-status-group");
+
+        JsonDeserializer<TripStatusMessage> deserializer = new JsonDeserializer<>(TripStatusMessage.class);
+        deserializer.setRemoveTypeHeaders(false);
+        deserializer.addTrustedPackages("com.driveguard.rule_engine.dto");
+        deserializer.setUseTypeHeaders(false);
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer
+        );
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TripStatusMessage> tripStatusKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, TripStatusMessage> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(tripStatusConsumerFactory());
+        return factory;
+    }
+
 }

@@ -47,6 +47,29 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /**
+     * Close all WebSocket connections for a specific carId
+     *
+     * @param carId the car ID
+     * @param status the close status
+     */
+    public void closeConnectionsForCar(String carId, CloseStatus status) {
+        Set<WebSocketSession> sessions = carIdSessions.get(carId);
+        if (sessions != null && !sessions.isEmpty()) {
+            for (WebSocketSession session : new HashSet<>(sessions)) {
+                try {
+                    if (session.isOpen()) {
+                        session.close(status);
+                    }
+                } catch (IOException e) {
+                    log.debug(String.format("Error closing session for carId %s: %s", carId, e.getMessage()));
+                }
+            }
+            carIdSessions.remove(carId);
+            log.info(String.format("Closed %d connections for carId: %s", sessions.size(), carId));
+        }
+    }
+
     @Override
     public void afterConnectionClosed(WebSocketSession session,@NonNull CloseStatus status) throws Exception {
         String uri = Objects.requireNonNull(session.getUri()).getPath();
