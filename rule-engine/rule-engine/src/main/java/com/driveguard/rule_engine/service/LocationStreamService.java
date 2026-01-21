@@ -18,9 +18,12 @@ public class LocationStreamService {
 
     private final LocationWebSocketHandler webSocketHandler;
 
+    private final AlertCacheService alertCacheService;
+
     @Autowired
-    public LocationStreamService(LocationWebSocketHandler webSocketHandler) {
+    public LocationStreamService(LocationWebSocketHandler webSocketHandler, AlertCacheService alertCacheService) {
         this.webSocketHandler = webSocketHandler;
+        this.alertCacheService = alertCacheService;
     }
 
     /**
@@ -35,6 +38,8 @@ public class LocationStreamService {
     )
     public void consumeLocationData(TripRow tripRow) {
         try {
+            // REFRESH STATUS: Mark trip as active because we just saw it move
+            alertCacheService.addActiveTrip(tripRow.getTripNumber());
             // Broadcast the location data to all connected WebSocket clients
             webSocketHandler.broadcastLocation(tripRow);
         } catch (Exception e) {
@@ -55,10 +60,15 @@ public class LocationStreamService {
             if (!tripStatus) {
                 log.info(String.format("Trip ended for carId: %s, tripNumber: %s. Closing WebSocket connections.",
                         carId, tripStatusMessage.getTripNumber()));
+                // Remove from active trips cache
+                alertCacheService.removeActiveTrip(tripStatusMessage.getTripNumber());
+                // Close WebSocket connections for this carId
                 webSocketHandler.closeConnectionsForCar(carId, CloseStatus.NORMAL);
             } else {
                 log.info(String.format("Trip started for carId: %s, tripNumber: %s",
                         carId, tripStatusMessage.getTripNumber()));
+                // Add to active trips cache
+                alertCacheService.addActiveTrip(tripStatusMessage.getTripNumber());
             }
         } catch (Exception e) {
             log.error(String.format("Error processing trip status message: %s",

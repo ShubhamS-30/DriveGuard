@@ -26,16 +26,24 @@ public class TripAlertsStorageService {
 
     private final AlertPersistenceService persistenceService;
 
+    private final AlertCacheService alertCacheService;
+
     private final Mapper mapper;
 
-    public TripAlertsStorageService(AlertPersistenceService persistenceService, Mapper mapper) {
+    public TripAlertsStorageService(AlertPersistenceService persistenceService, Mapper mapper, AlertCacheService alertCacheService) {
         this.persistenceService = persistenceService;
         this.mapper = mapper;
+        this.alertCacheService = alertCacheService;
     }
 
     @KafkaListener(topics = "${data.cab.alert.topic.name}", groupId = "alert-storage-group")
     public void consumeAndBufferAlert(Alert alert) {
 
+        try {
+            alertCacheService.pushAlert(alert.getTripNumber(), alert);
+        } catch (Exception e) {
+            log.error("Failed to push alert to Redis cache: " + e.getMessage(), e);
+        }
         // Convert Kafka DTO to MySQL Entity
         TripAlerts entity = mapper.mapToEntity(alert);
 
@@ -45,7 +53,6 @@ public class TripAlertsStorageService {
             flushBuffer();
         }
     }
-
 
 
     /**
