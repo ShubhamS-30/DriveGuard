@@ -1,18 +1,20 @@
 package com.driveguard.rule_engine.service;
 
+import com.driveguard.rule_engine.AppLogger;
 import com.driveguard.rule_engine.Mapper;
 import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.entity.TripAlerts;
 import com.driveguard.rule_engine.exception.NoAlertsFoundException;
 import com.driveguard.rule_engine.repository.TripAlertsRepository;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AlertPersistenceService {
@@ -22,6 +24,8 @@ public class AlertPersistenceService {
     private final AlertCacheService alertCacheService;
 
     private final Mapper mapper;
+
+    private static final AppLogger log = AppLogger.getLogger(AlertPersistenceService.class);
 
     // Constructor Injection
     public AlertPersistenceService(TripAlertsRepository repository, Mapper mapper, AlertCacheService alertCacheService) {
@@ -40,26 +44,46 @@ public class AlertPersistenceService {
 
     @Transactional(readOnly = true)
     public Page<Alert> getAlertsByTripNumber(String tripNumber, Pageable pageable) {
-
-        // 1. Logic for Active Trips (Hot Path)
-        if (alertCacheService.isTripActive(tripNumber)) {
-            List<Alert> pagedAlerts = alertCacheService.getAlerts(tripNumber, pageable);
-            long totalElements = alertCacheService.getAlertCount(tripNumber);
-
-            if (pagedAlerts.isEmpty() && pageable.getOffset() == 0) {
-                throw new NoAlertsFoundException("NO ALERTS FOUND FOR ACTIVE TRIP: " + tripNumber);
-            }
-
-            return new PageImpl<>(pagedAlerts, pageable, totalElements);
+        // 1. Check Redis (Pass 2 args)
+        Page<Alert> cachedPage = alertCacheService.getCachedPage(tripNumber, pageable);
+        if (cachedPage != null) {
+            return cachedPage;
         }
 
-        // 2. Fallback for Historical Trips (Cold Path)
+        // 2. Database Fallback
         Page<TripAlerts> tripAlerts = repository.findByTripNumber(tripNumber, pageable);
-
         if (tripAlerts.isEmpty()) {
-            throw new NoAlertsFoundException("NO ALERTS FOUND IN DB FOR TRIP: " + tripNumber);
+            throw new NoAlertsFoundException("NO ALERTS FOUND FOR TRIP: " + tripNumber);
         }
 
-        return tripAlerts.map(mapper::mapToDTO);
+        Page<Alert> resultPage = tripAlerts.map(mapper::mapToDTO);
+
+        // 3. Save to Redis (Pass 3 args)
+        alertCacheService.cacheAlertPage(tripNumber, pageable, resultPage);
+
+        return resultPage;
+    }
+
+    @Scheduled(fixedRate = 60000)
+    public void refreshActiveTripCaches() {
+        // Get all trips that are currently active
+        Set<String> activeTrips = alertCacheService.getAllActiveTrips();
+
+        if (activeTrips == null || activeTrips.isEmpty()) return;
+
+        log.info(String.format("Cron: Warming cache for %s active trips", activeTrips.size()));
+
+        // We typically refresh Page 0 (the most viewed page)
+        Pageable firstPage = PageRequest.of(0, 20);
+
+        for (String tripNumber : activeTrips) {
+            try {
+                // This call will automatically hit the DB and update Redis
+                // because of the logic inside getAlertsByTripNumber.
+                getAlertsByTripNumber(tripNumber, firstPage);
+            } catch (NoAlertsFoundException ignored) {
+                // It's okay if an active trip doesn't have alerts yet
+            }
+        }
     }
 }

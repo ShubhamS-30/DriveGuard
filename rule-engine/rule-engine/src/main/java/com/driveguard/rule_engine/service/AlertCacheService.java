@@ -2,9 +2,13 @@ package com.driveguard.rule_engine.service;
 
 import com.driveguard.rule_engine.AppLogger;
 import com.driveguard.rule_engine.dto.Alert;
+import com.driveguard.rule_engine.dto.RestPage;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,10 +21,10 @@ import java.util.concurrent.TimeUnit;
 public class AlertCacheService {
     private final StringRedisTemplate redisTemplate;
 
-    // Prefix for the alert keys to keep Redis organized
-    private static final String ALERT_KEY_PREFIX = "alerts:trip:";
     // Use ZSET instead of SET for individual member "expiration"
     private static final String ACTIVE_TRIPS_ZSET = "active_trips_zset";
+
+    private static final String PAGE_CACHE_PREFIX = "cache:alerts:";
 
     // Threshold after which a trip is considered "Dead" if no events arrive
     private static final long INACTIVITY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(60);
@@ -57,7 +61,6 @@ public class AlertCacheService {
      * Explicitly removes trip and its alerts.
      */
     public void removeActiveTrip(String tripNumber) {
-        deleteAlerts(tripNumber);
         redisTemplate.opsForZSet().remove(ACTIVE_TRIPS_ZSET, tripNumber);
         log.info("Manually removed trip: " + tripNumber);
     }
@@ -97,79 +100,71 @@ public class AlertCacheService {
     }
 
     /**
-     * Store a new alert in the trip's list.
-     * Uses LPUSH (List Push) to add to the head of the list.
+     * Caches a page of alerts.
+     * Generates the key internally using tripNumber and pageable.
      */
-    public void pushAlert(String tripNumber, Alert alert) {
-
-        if (alert == null && isTripActive(tripNumber)) {
-            return;
-        }
+    public void cacheAlertPage(String tripNumber, Pageable pageable, Page<Alert> page) {
+        String key = generatePageKey(tripNumber, pageable);
         try {
-            // Refresh activity in the ZSET for the Cron Job
-            addActiveTrip(tripNumber);
-            String alertJson = objectMapper.writeValueAsString(alert);
-            String key = ALERT_KEY_PREFIX + tripNumber;
-
-            // 1. Push the alert to the list
-            redisTemplate.opsForList().leftPush(key, alertJson);
-
-            // 2. Set an expiration to avoid memory leaks
-            redisTemplate.expire(key, 5, TimeUnit.HOURS);
+            String json = objectMapper.writeValueAsString(page);
+            // Rare access TTL: 30 minutes
+            redisTemplate.opsForValue().set(key, json, 30, TimeUnit.MINUTES);
         } catch (JsonProcessingException e) {
-            log.error(String.format("Error serializing alert for trip %s: %s", tripNumber, e.getMessage()), e);
+            log.error("Failed to cache alert page for trip: " + tripNumber, e);
         }
     }
 
     /**
-     * Optimized: Retrieve only a specific page of alerts from Redis.
-     * Uses LRANGE (List Range) - O(S+N) where S is start offset.
+     * Retrieves a cached page based on tripNumber and pageable.
      */
-    public List<Alert> getAlerts(String tripNumber, Pageable pageable) {
-        if (!isTripActive(tripNumber)) {
-            return Collections.emptyList();
+    public Page<Alert> getCachedPage(String tripNumber, Pageable pageable) {
+        String key = generatePageKey(tripNumber, pageable);
+        String json = redisTemplate.opsForValue().get(key);
+
+        if (json == null) return null;
+
+        try {
+            return objectMapper.readValue(json, new TypeReference<RestPage<Alert>>() {
+            });
+        } catch (Exception e) {
+            log.error("Error deserializing cached page for trip: " + tripNumber, e);
+            return null;
         }
+    }
 
-        String key = ALERT_KEY_PREFIX + tripNumber;
+    private String generatePageKey(String tripNumber, Pageable pageable) {
+        return PAGE_CACHE_PREFIX + tripNumber + ":p" + pageable.getPageNumber() + ":s" + pageable.getPageSize();
+    }
 
-        // Calculate Redis offsets
-        int start = (int) pageable.getOffset();
-        int end = start + pageable.getPageSize() - 1; // Redis end is inclusive
+    /**
+     * Evicts all cached pages for a specific trip.
+     */
+    public void evictTripCache(String tripNumber) {
+        String pattern = PAGE_CACHE_PREFIX + tripNumber + ":*";
 
-        // Fetch only the required slice
-        List<String> cachedJsonStrings = redisTemplate.opsForList().range(key, start, end);
+        try {
+            // Scan pattern and delete keys in batches
+            Set<String> keysToDelete = new HashSet<>();
+            ScanOptions options = ScanOptions.scanOptions().match(pattern).count(100).build();
 
-        if (cachedJsonStrings == null || cachedJsonStrings.isEmpty()) {
-            return Collections.emptyList();
-        }
+            try (var cursor = redisTemplate.scan(options)) {
+                cursor.forEachRemaining(key -> {
+                    keysToDelete.add(key);
 
-        return cachedJsonStrings.stream()
-                .map(json -> {
-                    try {
-                        return objectMapper.readValue(json, Alert.class);
-                    } catch (JsonProcessingException e) {
-                        log.error("Deserialization error for trip " + tripNumber, e);
-                        return null;
+                    // Delete in small batches of 50 to avoid long-running delete commands
+                    if (keysToDelete.size() >= 50) {
+                        redisTemplate.delete(keysToDelete);
+                        keysToDelete.clear();
                     }
-                })
-                .filter(Objects::nonNull)
-                .toList();
-    }
+                });
+            }
 
-    /**
-     * Get total count for pagination metadata.
-     */
-    public long getAlertCount(String tripNumber) {
-        Long count = redisTemplate.opsForList().size(ALERT_KEY_PREFIX + tripNumber);
-        return count != null ? count : 0;
-    }
-
-    /**
-     * Delete all alerts for a specific trip.
-     * Used when a trip ends.
-     */
-    public void deleteAlerts(String tripNumber) {
-        String key = ALERT_KEY_PREFIX + tripNumber;
-        redisTemplate.delete(key);
+            // Final flush for remaining keys
+            if (!keysToDelete.isEmpty()) {
+                redisTemplate.delete(keysToDelete);
+            }
+        } catch (Exception e) {
+            log.error(String.format("Error during Redis SCAN for trip: %s", tripNumber), e);
+        }
     }
 }

@@ -38,15 +38,19 @@ public class TripAlertsStorageService {
 
     @KafkaListener(topics = "${data.cab.alert.topic.name}", groupId = "alert-storage-group")
     public void consumeAndBufferAlert(Alert alert) {
-
+        // 1. CACHE EVICTION: Delete stale cached pages for this trip
+        // Do this FIRST so that any concurrent API calls don't get old data
         try {
-            alertCacheService.pushAlert(alert.getTripNumber(), alert);
+            alertCacheService.evictTripCache(alert.getTripNumber());
         } catch (Exception e) {
-            log.error("Failed to push alert to Redis cache: " + e.getMessage(), e);
+            log.error("Failed to evict cache for trip: " + alert.getTripNumber(), e);
         }
-        // Convert Kafka DTO to MySQL Entity
-        TripAlerts entity = mapper.mapToEntity(alert);
 
+        // 2. Refresh active status (Heartbeat)
+        alertCacheService.addActiveTrip(alert.getTripNumber());
+
+        // 3. MySQL Persistence (Batching)
+        TripAlerts entity = mapper.mapToEntity(alert);
         buffer.add(entity);
 
         if (buffer.size() >= batchSize) {
