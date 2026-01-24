@@ -15,6 +15,7 @@ public class Mapper {
                 .details(alert.getDetails())
                 .latitude(alert.getLatitude())
                 .longitude(alert.getLongitude())
+                .timestamp(alert.getTimestamp())
                 .build();
     }
 
@@ -30,6 +31,7 @@ public class Mapper {
         alert.setDetails(tripAlerts.getDetails());
         alert.setLatitude(tripAlerts.getLatitude());
         alert.setLongitude(tripAlerts.getLongitude());
+        alert.setTimestamp(tripAlerts.getTimestamp());
         return alert;
     }
 }

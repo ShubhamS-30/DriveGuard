@@ -4,14 +4,12 @@ import com.driveguard.rule_engine.AppLogger;
 import com.driveguard.rule_engine.dto.Alert;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -124,16 +122,46 @@ public class AlertCacheService {
     }
 
     /**
-     * Retrieve all alerts for a trip from Redis.
-     * Uses LRANGE (List Range) - O(N).
+     * Optimized: Retrieve only a specific page of alerts from Redis.
+     * Uses LRANGE (List Range) - O(S+N) where S is start offset.
      */
-    public List<Object> getAlerts(String tripNumber) {
+    public List<Alert> getAlerts(String tripNumber, Pageable pageable) {
         if (!isTripActive(tripNumber)) {
-            return Collections.emptyList(); // No alerts for inactive trips
+            return Collections.emptyList();
         }
+
         String key = ALERT_KEY_PREFIX + tripNumber;
-        // 0 to -1 returns all elements in the list
-        return Collections.singletonList(redisTemplate.opsForList().range(key, 0, -1));
+
+        // Calculate Redis offsets
+        int start = (int) pageable.getOffset();
+        int end = start + pageable.getPageSize() - 1; // Redis end is inclusive
+
+        // Fetch only the required slice
+        List<String> cachedJsonStrings = redisTemplate.opsForList().range(key, start, end);
+
+        if (cachedJsonStrings == null || cachedJsonStrings.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return cachedJsonStrings.stream()
+                .map(json -> {
+                    try {
+                        return objectMapper.readValue(json, Alert.class);
+                    } catch (JsonProcessingException e) {
+                        log.error("Deserialization error for trip " + tripNumber, e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * Get total count for pagination metadata.
+     */
+    public long getAlertCount(String tripNumber) {
+        Long count = redisTemplate.opsForList().size(ALERT_KEY_PREFIX + tripNumber);
+        return count != null ? count : 0;
     }
 
     /**

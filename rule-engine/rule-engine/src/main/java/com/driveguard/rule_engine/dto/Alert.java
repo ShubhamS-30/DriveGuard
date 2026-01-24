@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,7 +24,7 @@ public class Alert {
     private String details;
 
     // The timestamp (in epoch milliseconds) when the alert was generated
-    private long timestamp;
+    private LocalDateTime timestamp;
 
     // The trip number associated with the alert
     private String tripNumber;

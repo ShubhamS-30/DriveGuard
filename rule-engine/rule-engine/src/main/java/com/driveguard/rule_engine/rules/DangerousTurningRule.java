@@ -6,6 +6,7 @@ import com.driveguard.rule_engine.dto.VehicleState;
 import com.driveguard.rule_engine.service.RuleStrategy;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Component
@@ -33,7 +34,7 @@ public class DangerousTurningRule implements RuleStrategy {
                         vehicleId,
                         getRuleId(),
                         String.format("Sharp turn of %.1f degrees detected while speeding", angle),
-                        System.currentTimeMillis(),
+                        LocalDateTime.now(),
                         row.getTripNumber(),
                         Double.parseDouble(row.getLatitude()),
                         Double.parseDouble(row.getLongitude())
@@ -41,7 +42,7 @@ public class DangerousTurningRule implements RuleStrategy {
             }
         } catch (NumberFormatException ex) {
             return Optional.of(new Alert(null,vehicleId, getRuleId(), String.format("Invalid number format %s", ex.getMessage()),
-                    System.currentTimeMillis(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
+                    LocalDateTime.now(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
         }
         return Optional.empty();
     }

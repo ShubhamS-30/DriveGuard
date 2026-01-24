@@ -6,6 +6,7 @@ import com.driveguard.rule_engine.dto.VehicleState;
 import com.driveguard.rule_engine.service.RuleStrategy;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Component
@@ -27,11 +28,11 @@ public class SpeedingRule implements RuleStrategy {
             double limit = Double.parseDouble(row.getSpeed_osrm());
             if (speed > (limit + SPEEDING_THRESHOLD)) {
                 return Optional.of(new Alert(null,vehicleId, getRuleId(), String.format("Over Speeding detected with speed %s km/h in a %s km/h zone.", speed, limit),
-                        System.currentTimeMillis(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
+                        LocalDateTime.now(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
             }
         } catch (NumberFormatException ex) {
             return Optional.of(new Alert(null,vehicleId, getRuleId(), String.format("Invalid number format %s", ex.getMessage()),
-                    System.currentTimeMillis(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
+                    LocalDateTime.now(), row.getTripNumber(), Double.parseDouble(row.getLatitude()), Double.parseDouble(row.getLongitude())));
         }
 
         return Optional.empty();
