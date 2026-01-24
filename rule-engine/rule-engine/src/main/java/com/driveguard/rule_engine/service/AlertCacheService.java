@@ -6,6 +6,8 @@ import com.driveguard.rule_engine.dto.RestPage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.ScanOptions;
@@ -80,21 +82,37 @@ public class AlertCacheService {
         return redisTemplate.opsForZSet().range(ACTIVE_TRIPS_ZSET, 0, -1);
     }
 
-    /**
-     * CRON JOB: The "Consistency Guard".
-     * Runs 30 minutes to clean up trips that missed their "Trip End" event.
-     */
+    // Runs once when the application is fully started and ready
+    @EventListener(ApplicationReadyEvent.class)
+    public void onStartUp() {
+        log.info("System Started: Running initial ghost trip cleanup...");
+        cleanupGhostTrips();
+    }
+
+    // Runs every 30 minutes
     @Scheduled(cron = "0 0/30 * * * ?")
+    public void scheduledCleanup() {
+        log.info("Scheduled Cron: Running ghost trip cleanup...");
+        cleanupGhostTrips();
+    }
+
     public void cleanupGhostTrips() {
+        log.info("Starting ghost trip eviction process...");
         long cutoff = System.currentTimeMillis() - INACTIVITY_TIMEOUT_MS;
 
-        // Find all trips that haven't sent an update in 30 minutes
+        // Efficiently find trips to remove
         Set<String> expiredTrips = redisTemplate.opsForZSet().rangeByScore(ACTIVE_TRIPS_ZSET, 0, cutoff);
 
         if (expiredTrips != null && !expiredTrips.isEmpty()) {
+            log.warn(String.format("Detected %d ghost trips. Starting eviction...", expiredTrips.size()));
+
+            // Optimization: Remove from ZSET in one batch command
+            redisTemplate.opsForZSet().removeRangeByScore(ACTIVE_TRIPS_ZSET, 0, cutoff);
+
             for (String tripNumber : expiredTrips) {
-                log.warn(String.format("CRON: Detected ghost trip (no activity for %s ms). Cleaning: %s", INACTIVITY_TIMEOUT_MS, tripNumber));
-                removeActiveTrip(tripNumber); // Deletes alerts and removes from ZSET
+                // Clear the paginated alert cache we built earlier
+                evictTripCache(tripNumber);
+                log.info("Cleaned up cache for trip: " + tripNumber);
             }
         }
     }
