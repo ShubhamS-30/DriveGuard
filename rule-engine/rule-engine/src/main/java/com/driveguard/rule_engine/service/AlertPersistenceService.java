@@ -6,6 +6,7 @@ import com.driveguard.rule_engine.dto.Alert;
 import com.driveguard.rule_engine.entity.TripAlerts;
 import com.driveguard.rule_engine.exception.NoAlertsFoundException;
 import com.driveguard.rule_engine.repository.TripAlertsRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,8 @@ public class AlertPersistenceService {
 
     private final Mapper mapper;
 
+    private AlertPersistenceService self;
+
     private static final AppLogger log = AppLogger.getLogger(AlertPersistenceService.class);
 
     // Constructor Injection
@@ -32,6 +35,11 @@ public class AlertPersistenceService {
         this.alertCacheService = alertCacheService;
         this.repository = repository;
         this.mapper = mapper;
+    }
+
+    @PostConstruct
+    public void init() {
+        this.self = this;
     }
 
     @Transactional
@@ -78,9 +86,12 @@ public class AlertPersistenceService {
 
         for (String tripNumber : activeTrips) {
             try {
-                // This call will automatically hit the DB and update Redis
-                // because of the logic inside getAlertsByTripNumber.
-                getAlertsByTripNumber(tripNumber, firstPage);
+                // Call through self-reference to properly handle @Transactional
+                if (self != null) {
+                    self.getAlertsByTripNumber(tripNumber, firstPage);
+                } else {
+                    log.info(String.format("Self-reference is null while refreshing cache for trip: %s, Unable to refresh keys for active trips.", tripNumber));
+                }
             } catch (NoAlertsFoundException ignored) {
                 // It's okay if an active trip doesn't have alerts yet
             }
