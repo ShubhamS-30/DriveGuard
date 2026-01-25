@@ -6,6 +6,7 @@ import com.driveguard.rule_engine.dto.RestPage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -36,6 +39,9 @@ public class AlertCacheService {
     private static final AppLogger log = AppLogger.getLogger(AlertCacheService.class);
 
     private final Map<String, Long> localHeartbeatCache = new ConcurrentHashMap<>();
+
+    // Define an executor with a small pool for background tasks
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public AlertCacheService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -61,10 +67,30 @@ public class AlertCacheService {
 
     /**
      * Explicitly removes trip and its alerts.
+     * delaying the removal by 10 seconds to allow any in-flight messages to be processed.
      */
     public void removeActiveTrip(String tripNumber) {
-        redisTemplate.opsForZSet().remove(ACTIVE_TRIPS_ZSET, tripNumber);
-        log.info("Manually removed trip: " + tripNumber);
+        log.info(String.format("Trip %s scheduled for removal in 10 seconds...", tripNumber));
+
+        scheduler.schedule(() -> {
+            try {
+                // 1. Remove from the Active Registry
+                redisTemplate.opsForZSet().remove(ACTIVE_TRIPS_ZSET, tripNumber);
+
+                // 2. Clear the paginated caches (Important for memory)
+                evictTripCache(tripNumber);
+
+                log.info("Successfully removed trip and evicted cache: " + tripNumber);
+            } catch (Exception e) {
+                log.error("Error during delayed removal for trip: " + tripNumber, e);
+            }
+        }, 10, TimeUnit.SECONDS);
+    }
+
+    // Ensure the scheduler is shut down properly when the app stops
+    @PreDestroy
+    public void shutdownScheduler() {
+        scheduler.shutdown();
     }
 
     /**
