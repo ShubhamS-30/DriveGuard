@@ -1,4 +1,4 @@
-package com.driveGuard.dataProducer;
+package com.driveguard.rule_engine;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,10 +6,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-public class DataProducerApplication {
+public class RuleEngineApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DataProducerApplication.class, args);
+		SpringApplication.run(RuleEngineApplication.class, args);
 	}
 
 }
