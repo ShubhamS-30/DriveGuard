@@ -1,0 +1,484 @@
+@import '../../styles/colors.scss';
+
+// Additional animations for login
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes blurMove {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(30px, -30px);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// Login Container
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, $secondary-color 0%, #1e293b 50%, $secondary-color 100%);
+  position: relative;
+  overflow: hidden;
+  font-family: $font-family;
+
+  @media (max-width: $mobile) {
+    padding: $spacing-md;
+  }
+
+  @media (max-width: 360px) {
+    padding: $spacing-sm;
+  }
+}
+
+// Background Blur Elements
+.background-blur {
+  position: absolute;
+  opacity: 0.1;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: blurMove 6s ease-in-out infinite;
+
+  &.top {
+    width: 400px;
+    height: 400px;
+    background: $accent-color;
+    top: -100px;
+    left: -100px;
+
+    @media (max-width: $mobile) {
+      width: 250px;
+      height: 250px;
+      top: -50px;
+      left: -50px;
+    }
+  }
+
+  &.bottom {
+    width: 300px;
+    height: 300px;
+    background: $primary-color;
+    bottom: -50px;
+    right: -50px;
+    animation-delay: 1s;
+
+    @media (max-width: $mobile) {
+      width: 200px;
+      height: 200px;
+      bottom: -30px;
+      right: -30px;
+    }
+  }
+}
+
+// Login Card
+.login-card {
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-xl;
+  padding: $spacing-xl;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: $z-fixed;
+  animation: fadeIn 0.6s ease-out;
+
+  @media (max-width: $mobile) {
+    padding: $spacing-lg $spacing-md;
+    max-width: 100%;
+    border-radius: $radius-md;
+  }
+
+  @media (max-width: 360px) {
+    padding: $spacing-md;
+    max-width: calc(100% - $spacing-sm);
+  }
+}
+
+// Login Header
+.login-header {
+  margin-bottom: $spacing-xl;
+  text-align: center;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+  animation: slideInLeft 0.6s ease-out;
+
+  @media (max-width: $mobile) {
+    gap: $spacing-sm;
+  }
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, $primary-color, $primary-light);
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $bg-white;
+  flex-shrink: 0;
+
+  svg {
+    width: 28px;
+    height: 28px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  @media (max-width: $mobile) {
+    width: 40px;
+    height: 40px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+
+.logo-text {
+  font-size: $font-size-4xl;
+  font-weight: $font-weight-bold;
+  color: $secondary-color;
+  margin: 0;
+  letter-spacing: -0.5px;
+
+  @media (max-width: $tablet) {
+    font-size: $font-size-3xl;
+  }
+
+  @media (max-width: $mobile) {
+    font-size: $font-size-2xl;
+  }
+
+  @media (max-width: 360px) {
+    font-size: $font-size-xl;
+  }
+}
+
+.tagline {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  margin: $spacing-sm 0 0 0;
+  font-weight: $font-weight-medium;
+  letter-spacing: 0.3px;
+
+  @media (max-width: $mobile) {
+    font-size: $font-size-xs;
+  }
+}
+
+// Login Form
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.form-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  display: block;
+}
+
+.form-input {
+  padding: $spacing-md;
+  border: 1.5px solid $border-color;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-family: inherit;
+  transition: all $transition-normal;
+  background: $bg-white;
+  color: $text-primary;
+
+  @media (max-width: $mobile) {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+  }
+
+  &::placeholder {
+    color: $text-secondary;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: rgba(37, 99, 235, 0.01);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $primary-light;
+  }
+
+  &.input-error {
+    border-color: $error-color;
+    background: $error-light;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+  }
+
+  &:disabled {
+    background: $bg-light;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.error-message {
+  font-size: $font-size-xs;
+  color: $error-color;
+  font-weight: $font-weight-medium;
+  margin-top: $spacing-xs;
+}
+
+// Error Banner
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: $error-light;
+  border: 1px solid $error-color;
+  border-radius: $radius-md;
+  color: $error-color;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  animation: fadeIn $transition-normal ease-out;
+
+  @media (max-width: $mobile) {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-xs;
+  }
+}
+
+.error-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: $error-color;
+  stroke-width: 2;
+}
+
+// Login Button
+.login-button {
+  padding: $spacing-md $spacing-lg;
+  background: linear-gradient(135deg, $primary-color, $primary-light);
+  color: $bg-white;
+  border: none;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  cursor: pointer;
+  transition: all $transition-normal;
+  margin-top: $spacing-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: $shadow-lg;
+
+  @media (max-width: $mobile) {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-xs;
+  }
+
+  &:hover:not(:disabled) {
+    box-shadow: $shadow-xl;
+    transform: translateY(-2px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: $shadow-md;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Loading Spinner
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+
+  span {
+    width: 6px;
+    height: 6px;
+    background: $bg-white;
+    border-radius: 50%;
+    animation: spin 1.4s infinite;
+
+    &:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0s;
+    }
+  }
+}
+
+// Demo Info
+.demo-info {
+  background: linear-gradient(135deg, rgba($primary-color, 0.05), rgba($accent-color, 0.05));
+  border: 1px solid rgba($primary-color, 0.1);
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-2xl;
+  font-size: $font-size-sm;
+
+  @media (max-width: $mobile) {
+    padding: $spacing-md;
+    margin-bottom: $spacing-xl;
+  }
+}
+
+.demo-label {
+  color: $text-primary;
+  font-weight: $font-weight-bold;
+  margin: 0 0 $spacing-md 0;
+  display: block;
+  font-size: $font-size-base;
+}
+
+.credential-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+
+  @media (max-width: $mobile) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.credential-label {
+  color: $text-secondary;
+  font-weight: $font-weight-medium;
+  min-width: 90px;
+  font-size: $font-size-sm;
+
+  @media (max-width: $mobile) {
+    min-width: auto;
+  }
+}
+
+.credential-value {
+  background: $secondary-color;
+  color: $accent-color;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-bold;
+
+  @media (max-width: $mobile) {
+    font-size: 11px;
+  }
+}
+
+// Login Footer
+.login-footer {
+  text-align: center;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $border-color;
+  color: $text-secondary;
+  font-size: $font-size-xs;
+
+  @media (max-width: $mobile) {
+    padding-top: $spacing-md;
+    font-size: 11px;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// Responsive Adjustments for Extra Small Devices
+@media (max-width: 360px) {
+  .login-card {
+    border-radius: $radius-lg;
+    margin: $spacing-xl auto;
+  }
+
+  .logo-text {
+    font-size: $font-size-2xl;
+  }
+
+  .login-button {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-xs;
+  }
+
+  .demo-info {
+    padding: $spacing-md;
+  }
+
+  .credential-label {
+    min-width: auto;
+  }
+}

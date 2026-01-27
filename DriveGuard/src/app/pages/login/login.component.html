@@ -1,0 +1,89 @@
+<div class="login-container">
+  <div class="login-card">
+    <!-- Header -->
+    <div class="login-header">
+      <div class="logo-section">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+        </div>
+        <h1 class="logo-text">DriveGuard</h1>
+      </div>
+      <p class="tagline">Real-time Driver Safety Monitoring</p>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="login-form">
+      <!-- Username Field -->
+      <div class="form-group">
+        <label for="username" class="form-label">Username</label>
+        <input
+          id="username"
+          type="text"
+          formControlName="username"
+          placeholder="Enter your username"
+          class="form-input"
+          [class.input-error]="isFieldInvalid('username')"
+          [disabled]="isLoading"
+          autocomplete="username"
+        />
+        <div class="error-message" *ngIf="isFieldInvalid('username')">
+          Username is required
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Enter your password"
+          class="form-input"
+          [class.input-error]="isFieldInvalid('password')"
+          [disabled]="isLoading"
+          autocomplete="current-password"
+        />
+        <div class="error-message" *ngIf="isFieldInvalid('password')">
+          Password is required
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-banner" *ngIf="errorMessage">
+        <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Login Button -->
+      <button
+        type="submit"
+        class="login-button"
+        [disabled]="loginForm.invalid || isLoading"
+      >
+        <span *ngIf="!isLoading">Sign In</span>
+        <span *ngIf="isLoading" class="loading-spinner">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <div class="login-footer">
+      <p>&copy; 2026 DriveGuard. Real-time Driver Safety Monitoring System.</p>
+    </div>
+  </div>
+
+  <!-- Background Elements -->
+  <div class="background-blur top"></div>
+  <div class="background-blur bottom"></div>
+</div>

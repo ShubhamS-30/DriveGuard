@@ -1,0 +1,17 @@
+<header class="dashboard-header">
+  <div class="header-content">
+    <div class="header-left">
+      <h1 class="dashboard-title">Dashboard</h1>
+      <p class="dashboard-subtitle">Real-time Driver Safety Monitoring System</p>
+    </div>
+    <div class="header-right">
+      <div class="user-info">
+        <div class="user-details">
+          <span class="user-name">{{ currentUser?.username }}</span>
+          <span class="user-role">{{ currentUser?.role }}</span>
+        </div>
+      </div>
+      <button class="logout-button" (click)="onLogout()">Logout</button>
+    </div>
+  </div>
+</header>
