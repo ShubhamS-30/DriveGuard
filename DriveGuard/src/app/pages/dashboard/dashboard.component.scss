@@ -133,6 +133,7 @@
   border: 1px solid rgba($text-white, 0.1);
   transition: all $transition-normal;
   cursor: pointer;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   animation: fadeIn 0.6s ease-out;
 
