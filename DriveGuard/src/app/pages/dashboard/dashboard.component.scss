@@ -1,12 +1,62 @@
 @import '../../styles/colors.scss';
 
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blurMove {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(30px, -30px);
+  }
+}
+
 // Dashboard Container
 .dashboard-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, $bg-light 0%, $bg-lighter 100%);
+  background: linear-gradient(135deg, $secondary-color 0%, #1e293b 50%, $secondary-color 100%);
   font-family: $font-family;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+// Background Blur Elements
+.dashboard-container::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: $accent-color;
+  border-radius: 50%;
+  opacity: 0.08;
+  top: -100px;
+  left: -100px;
+  animation: blurMove 6s ease-in-out infinite;
+}
+
+.dashboard-container::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: $primary-color;
+  border-radius: 50%;
+  opacity: 0.08;
+  bottom: -50px;
+  right: -50px;
+  animation: blurMove 6s ease-in-out infinite 1s;
 }
 
 // Main Content
@@ -16,6 +66,8 @@
   padding: $spacing-2xl $spacing-xl;
   width: 100%;
   flex: 1;
+  position: relative;
+  z-index: 1;
 
   @media (max-width: $tablet) {
     padding: $spacing-lg $spacing-md;
@@ -29,12 +81,13 @@
 // Welcome Section
 .welcome-section {
   margin-bottom: $spacing-2xl;
+  animation: fadeIn 0.6s ease-out;
 
   h2 {
     margin: 0 0 $spacing-sm 0;
     font-size: $font-size-2xl;
     font-weight: $font-weight-bold;
-    color: $text-primary;
+    color: $text-white;
 
     @media (max-width: $tablet) {
       font-size: $font-size-xl;
@@ -48,7 +101,7 @@
   p {
     margin: 0;
     font-size: $font-size-base;
-    color: $text-secondary;
+    color: rgba($text-white, 0.8);
 
     @media (max-width: $mobile) {
       font-size: $font-size-sm;
@@ -74,21 +127,24 @@
 }
 
 .feature-card {
-  background: $bg-white;
+  background: rgba($bg-white, 0.95);
   border-radius: $radius-lg;
   padding: $spacing-lg;
-  border: 1px solid $border-color;
+  border: 1px solid rgba($text-white, 0.1);
   transition: all $transition-normal;
   cursor: pointer;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.6s ease-out;
 
   @media (max-width: $mobile) {
     padding: $spacing-md;
   }
 
   &:hover {
-    box-shadow: $shadow-lg;
-    transform: translateY(-4px);
-    border-color: $primary-color;
+    box-shadow: 0 8px 32px rgba($primary-color, 0.15);
+    transform: translateY(-8px);
+    border-color: rgba($primary-color, 0.3);
+    background: $bg-white;
   }
 }
 
@@ -148,73 +204,6 @@
 
   @media (max-width: $mobile) {
     font-size: $font-size-xs;
-  }
-}
-
-// Info Section
-.info-section {
-  h2 {
-    margin: 0 0 $spacing-lg 0;
-    font-size: $font-size-2xl;
-    font-weight: $font-weight-bold;
-    color: $text-primary;
-
-    @media (max-width: $tablet) {
-      font-size: $font-size-xl;
-    }
-
-    @media (max-width: $mobile) {
-      font-size: $font-size-lg;
-    }
-  }
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: $spacing-lg;
-  background: $bg-white;
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
-  border: 1px solid $border-color;
-
-  @media (max-width: $tablet) {
-    gap: $spacing-md;
-    padding: $spacing-md;
-  }
-
-  @media (max-width: $mobile) {
-    grid-template-columns: 1fr;
-    gap: $spacing-md;
-    padding: $spacing-md;
-  }
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.info-label {
-  font-size: $font-size-xs;
-  font-weight: $font-weight-semibold;
-  color: $text-secondary;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.info-value {
-  font-size: $font-size-base;
-  font-weight: $font-weight-semibold;
-  color: $text-primary;
-
-  @media (max-width: $mobile) {
-    font-size: $font-size-sm;
-  }
-
-  &.authenticated {
-    color: $success-color;
   }
 }
 

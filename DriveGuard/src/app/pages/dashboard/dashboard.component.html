@@ -8,72 +8,13 @@
     </div>
 
     <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon location">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
-        </div>
-        <h3>Real-time Locations</h3>
-        <p>Monitor vehicle locations via WebSocket streaming</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon alert">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            <line x1="12" y1="9" x2="12" y2="13"></line>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-        </div>
-        <h3>Safety Alerts</h3>
-        <p>Receive real-time alerts for detected anomalies</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon rules">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-          </svg>
-        </div>
-        <h3>Safety Rules</h3>
-        <p>Speeding detection, dangerous turning & more</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon data">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="2" x2="12" y2="22"></line>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-          </svg>
-        </div>
-        <h3>Telemetry Data</h3>
-        <p>Access vehicle telemetry and trip information</p>
-      </div>
-    </div>
-
-    <div class="info-section">
-      <h2>System Information</h2>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-label">Authentication Status:</span>
-          <span class="info-value authenticated">Authenticated</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">User Role:</span>
-          <span class="info-value">{{ currentUser?.role }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Login Time:</span>
-          <span class="info-value">{{ loginTime | date: 'medium' }}</span>
-        </div>
-      </div>
+      <app-feature-card
+        *ngFor="let feature of features"
+        [icon]="feature.icon"
+        [type]="feature.type"
+        [title]="feature.title"
+        [description]="feature.description">
+      </app-feature-card>
     </div>
   </main>
 </div>

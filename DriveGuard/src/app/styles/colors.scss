@@ -16,16 +16,34 @@ $warning-color: #f59e0b; // Amber
 $error-color: #ef4444; // Red
 $error-light: #fee2e2; // Light Red
 
-// Text Colors
-$text-primary: #1f2937; // Dark Gray
-$text-secondary: #6b7280; // Medium Gray
-$text-light: #9ca3af; // Light Gray
-
 // Background Colors
 $bg-white: #ffffff; // White
 $bg-light: #f9fafb; // Very Light Gray
 $bg-lighter: #f3f4f6; // Lighter Gray
 $bg-dark: #1f2937; // Dark
+
+// Text Colors (added text-white)
+$text-primary: #1f2937; // Dark Gray
+$text-secondary: #6b7280; // Medium Gray
+$text-light: #9ca3af; // Light Gray
+$text-white: #ffffff; // White
+
+// Gradient Colors for Feature Icons
+$gradient-location-start: #667eea; // Purple-Blue
+$gradient-location-end: #764ba2; // Deep Purple
+$gradient-location: linear-gradient(135deg, $gradient-location-start 0%, $gradient-location-end 100%);
+
+$gradient-alert-start: #f093fb; // Pink
+$gradient-alert-end: #f5576c; // Red-Pink
+$gradient-alert: linear-gradient(135deg, $gradient-alert-start 0%, $gradient-alert-end 100%);
+
+$gradient-rules-start: #4facfe; // Light Blue
+$gradient-rules-end: #00f2fe; // Cyan
+$gradient-rules: linear-gradient(135deg, $gradient-rules-start 0%, $gradient-rules-end 100%);
+
+$gradient-data-start: #43e97b; // Green
+$gradient-data-end: #38f9d7; // Teal
+$gradient-data: linear-gradient(135deg, $gradient-data-start 0%, $gradient-data-end 100%);
 
 // Border Color
 $border-color: #e5e7eb; // Light Border

@@ -5,17 +5,44 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService, User } from '../../services/auth.service';
 import { DashboardHeaderComponent } from './dashboard-header/dashboard-header.component';
+import { FeatureCardComponent, Feature } from './feature-card/feature-card.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DashboardHeaderComponent],
+  imports: [CommonModule, DashboardHeaderComponent, FeatureCardComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   loginTime: Date = new Date();
+  features: Feature[] = [
+    {
+      icon: 'geo-alt',
+      type: 'location',
+      title: 'Real-time Locations',
+      description: 'Monitor vehicle locations via WebSocket streaming'
+    },
+    {
+      icon: 'exclamation-triangle',
+      type: 'alert',
+      title: 'Safety Alerts',
+      description: 'Receive real-time alerts for detected anomalies'
+    },
+    {
+      icon: 'list-check',
+      type: 'rules',
+      title: 'Safety Rules',
+      description: 'Speeding detection, dangerous turning & more'
+    },
+    {
+      icon: 'graph-up',
+      type: 'data',
+      title: 'Telemetry Data',
+      description: 'Access vehicle telemetry and trip information'
+    }
+  ];
   private readonly destroy$ = new Subject<void>();
 
   constructor(
