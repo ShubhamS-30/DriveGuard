@@ -22,6 +22,8 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    private static final String TRUSTED_PACKAGES = "com.driveguard.rule_engine.dto";
+
     @Bean
     public ConsumerFactory<String, Alert> alertConsumerFactory() {
         Map<String, Object> props = new HashMap<>();
@@ -31,7 +33,7 @@ public class KafkaConsumerConfig {
         // Use JsonDeserializer and trust your package to prevent security errors
         JsonDeserializer<Alert> deserializer = new JsonDeserializer<>(Alert.class);
         deserializer.setRemoveTypeHeaders(false);
-        deserializer.addTrustedPackages("com.driveguard.rule_engine.dto");
+        deserializer.addTrustedPackages(TRUSTED_PACKAGES);
         deserializer.setUseTypeHeaders(false); // Force it to use the Alert class provided above
 
         return new DefaultKafkaConsumerFactory<>(
@@ -59,7 +61,7 @@ public class KafkaConsumerConfig {
 
         JsonDeserializer<TripRow> deserializer = new JsonDeserializer<>(TripRow.class);
         deserializer.setRemoveTypeHeaders(false);
-        deserializer.addTrustedPackages("com.driveguard.rule_engine.dto");
+        deserializer.addTrustedPackages(TRUSTED_PACKAGES);
         deserializer.setUseTypeHeaders(false);
 
         return new DefaultKafkaConsumerFactory<>(
@@ -87,7 +89,7 @@ public class KafkaConsumerConfig {
 
         JsonDeserializer<TripStatusMessage> deserializer = new JsonDeserializer<>(TripStatusMessage.class);
         deserializer.setRemoveTypeHeaders(false);
-        deserializer.addTrustedPackages("com.driveguard.rule_engine.dto");
+        deserializer.addTrustedPackages(TRUSTED_PACKAGES);
         deserializer.setUseTypeHeaders(false);
 
         return new DefaultKafkaConsumerFactory<>(

@@ -13,6 +13,8 @@ import com.driveGuard.dataProducer.utility.AppLogger;
 import com.driveGuard.dataProducer.utility.Mapper;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -163,5 +165,13 @@ public class CarService {
     public CarDTO stopTripDataSimulationByCarId(Integer carId) {
         // Implementation for stopping trip data simulation for a specific car
         return mapper.carToCarDTO(endTrip(carId));
+    }
+
+    public Page<CarDTO> getAllActiveCars(int page, int size) {
+        Page<Car> activeCarsPage = carRepository.findByIsActiveTrip(true, PageRequest.of(page, size));
+        if(activeCarsPage.isEmpty()){
+            throw new TripNotFoundException("No active cars found at the moment.");
+        }
+        return activeCarsPage.map(mapper::carToCarDTO);
     }
 }

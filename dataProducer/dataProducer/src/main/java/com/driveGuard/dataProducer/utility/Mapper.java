@@ -57,7 +57,7 @@ public class Mapper {
         carDTO.setTransmission(car.getTransmission());
         carDTO.setWeightKg(car.getWeightKg());
         carDTO.setIsActiveTrip(car.getIsActiveTrip());
-        carDTO.setActiveTripNumber(carDTO.getActiveTripNumber());
+        carDTO.setActiveTripNumber(car.getActiveTripNumber());
         return carDTO;
     }
 

@@ -66,8 +66,6 @@ public class RuleEngineService {
                 // 3. Update State on Trigger
                 state.getLastTriggeredMap().put(className, currentTime);
 
-                // save alert in db
-
                 // return alert
                 return alert;
             }

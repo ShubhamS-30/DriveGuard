@@ -121,4 +121,19 @@ public class CarController {
         // Spring parses ?page=0&size=10&sort=startTime,desc automatically
         return ResponseEntity.ok(tripService.getTripsByCarId(carId, pageable));
     }
+
+    // Get paginated active cars
+    @Operation(
+            summary = "Get Paginated Active Cars",
+            description = "Retrieve paginated list of active cars currently on trips"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Active cars retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No active cars found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/active")
+    public ResponseEntity<Page<CarDTO>> getActiveCars(@ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(carService.getAllActiveCars(pageable.getPageNumber(), pageable.getPageSize()));
+    }
 }
