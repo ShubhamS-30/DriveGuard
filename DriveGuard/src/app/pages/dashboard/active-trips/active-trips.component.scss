@@ -1,0 +1,214 @@
+@import '../_shared-theme.scss';
+
+// Active Trips Container
+.active-trips-container {
+  @include themed-container();
+}
+
+// Active Trips Header
+.active-trips-header {
+  padding: $spacing-xl;
+  border-bottom: 1px solid rgba($text-white, 0.1);
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+
+  @media (max-width: $tablet) {
+    padding: $spacing-lg $spacing-md;
+  }
+
+  @media (max-width: $mobile) {
+    padding: $spacing-md;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $text-white;
+    flex: 1;
+
+    @media (max-width: $tablet) {
+      font-size: $font-size-xl;
+    }
+
+    @media (max-width: $mobile) {
+      font-size: $font-size-lg;
+    }
+  }
+}
+
+// Back Button
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  background: rgba($primary-color, 0.15);
+  border: 1px solid rgba($primary-color, 0.3);
+  border-radius: $radius-lg;
+  color: $primary-color;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: all $transition-normal;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  @media (max-width: $mobile) {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+  }
+
+  &:hover {
+    background: rgba($primary-color, 0.25);
+    border-color: rgba($primary-color, 0.5);
+    transform: translateX(-4px);
+  }
+
+  i {
+    font-size: 18px;
+  }
+}
+
+// Main Content
+.active-trips-main {
+  @include main-content();
+}
+
+// Loading State
+.trips-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-lg;
+  padding: $spacing-3xl;
+  background: rgba($bg-white, 0.95);
+  border-radius: $radius-lg;
+  border: 1px solid rgba($text-white, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba($primary-color, 0.1);
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  p {
+    margin: 0;
+    font-size: $font-size-base;
+    color: $text-primary;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Error State
+.trips-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-lg;
+  padding: $spacing-3xl;
+  background: rgba($error-color, 0.05);
+  border-radius: $radius-lg;
+  border: 1px solid rgba($error-color, 0.2);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  i {
+    font-size: 48px;
+    color: $error-color;
+  }
+
+  p {
+    margin: 0;
+    font-size: $font-size-base;
+    color: $text-primary;
+    text-align: center;
+    max-width: 500px;
+  }
+}
+
+.retry-button {
+  padding: $spacing-md $spacing-lg;
+  background: $primary-color;
+  border: none;
+  border-radius: $radius-lg;
+  color: $text-white;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: all $transition-normal;
+
+  &:hover {
+    background: $primary-dark;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Empty State
+.trips-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-lg;
+  padding: $spacing-3xl;
+  background: rgba($bg-white, 0.95);
+  border-radius: $radius-lg;
+  border: 1px solid rgba($text-white, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  i {
+    font-size: 64px;
+    color: $accent-color;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+  }
+
+  p {
+    margin: 0;
+    font-size: $font-size-base;
+    color: $text-secondary;
+  }
+}
+
+// Cars List - Grid layout for cards
+.cars-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: $spacing-lg;
+
+  @media (max-width: $tablet) {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: $spacing-md;
+  }
+
+  @media (max-width: $mobile) {
+    grid-template-columns: 1fr;
+    gap: $spacing-md;
+  }
+}

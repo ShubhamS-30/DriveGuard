@@ -17,7 +17,14 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    children: [
+      {
+        path: 'active-trips',
+        component: DashboardComponent,
+        canActivate: [authGuard]
+      }
+    ]
   },
   {
     path: '**',

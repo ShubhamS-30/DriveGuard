@@ -1,0 +1,40 @@
+<div class="active-trips-container">
+  <div class="active-trips-header">
+    <button class="back-button" (click)="onBackClick()" type="button">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back</span>
+    </button>
+    <h2>Active Trips</h2>
+  </div>
+
+  <main class="active-trips-main">
+    <div class="trips-content">
+      <!-- Loading State -->
+      <div class="trips-loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Loading active trips...</p>
+      </div>
+
+      <!-- Error State -->
+      <div class="trips-error" *ngIf="errorMessage && !isLoading">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>{{ errorMessage }}</p>
+        <button class="retry-button" (click)="fetchActiveCars()" type="button">
+          Try Again
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div class="trips-empty" *ngIf="!isLoading && !errorMessage && cars.length === 0">
+        <i class="bi bi-zigzag"></i>
+        <h3>No Active Trips</h3>
+        <p>There are currently no active trips to display</p>
+      </div>
+
+      <!-- Cars List -->
+      <div class="cars-list" *ngIf="!isLoading && !errorMessage && cars.length > 0">
+        <app-active-trip-card *ngFor="let car of cars" [car]="car"></app-active-trip-card>
+      </div>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,109 @@
+@import '../../../../styles/colors.scss';
+
+// Car Card
+.car-card {
+  background: linear-gradient(135deg, rgba($bg-white, 0.98) 0%, rgba($bg-white, 0.95) 100%);
+  border-radius: $radius-lg;
+  border: 1px solid rgba($text-white, 0.1);
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all $transition-normal;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    box-shadow: 0 8px 32px rgba($primary-color, 0.15);
+    transform: translateY(-4px);
+    border-color: rgba($primary-color, 0.3);
+  }
+
+  @media (max-width: $mobile) {
+    border-radius: $radius-md;
+  }
+}
+
+.car-header {
+  padding: $spacing-lg;
+  border-bottom: 2px solid rgba($primary-color, 0.1);
+  background: linear-gradient(135deg, rgba($primary-color, 0.05) 0%, transparent 100%);
+
+  h3 {
+    margin: 0 0 $spacing-sm 0;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+
+    @media (max-width: $mobile) {
+      font-size: $font-size-base;
+    }
+  }
+
+  .car-number {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.car-details {
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-md;
+  padding-bottom: $spacing-sm;
+  border-bottom: 1px solid rgba($text-white, 0.05);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  @media (max-width: $mobile) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.detail-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-secondary;
+  white-space: nowrap;
+
+  @media (max-width: $mobile) {
+    color: $text-light;
+  }
+}
+
+.detail-value {
+  font-size: $font-size-base;
+  color: $text-primary;
+  font-weight: $font-weight-semibold;
+  text-align: right;
+
+  @media (max-width: $mobile) {
+    text-align: left;
+  }
+}
+
+.status-active {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: rgba($success-color, 0.1);
+  color: $success-color;
+  border-radius: $radius-md;
+  font-weight: $font-weight-bold;
+
+  i {
+    font-size: 16px;
+  }
+}

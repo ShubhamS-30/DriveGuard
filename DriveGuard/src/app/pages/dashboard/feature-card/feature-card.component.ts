@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface Feature {
@@ -20,4 +20,14 @@ export class FeatureCardComponent {
   @Input() type: string = '';
   @Input() title: string = '';
   @Input() description: string = '';
+  @Output() cardClicked = new EventEmitter<Feature>();
+
+  onCardClick(): void {
+    this.cardClicked.emit({
+      icon: this.icon,
+      type: this.type,
+      title: this.title,
+      description: this.description
+    });
+  }
 }

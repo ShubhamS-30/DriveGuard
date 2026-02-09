@@ -1,7 +1,7 @@
-<div class="feature-card">
+<button class="feature-card" (click)="onCardClick()" type="button">
   <div [class]="'feature-icon ' + type">
     <i class="bi" [ngClass]="'bi-' + icon"></i>
   </div>
   <h3>{{ title }}</h3>
   <p>{{ description }}</p>
-</div>
+</button>

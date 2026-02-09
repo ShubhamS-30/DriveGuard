@@ -1,87 +1,18 @@
-@import '../../styles/colors.scss';
-
-// Animations
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes blurMove {
-  0%, 100% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(30px, -30px);
-  }
-}
+@import '_shared-theme.scss';
 
 // Dashboard Container
 .dashboard-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, $secondary-color 0%, #1e293b 50%, $secondary-color 100%);
-  font-family: $font-family;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-
-// Background Blur Elements
-.dashboard-container::before {
-  content: '';
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  background: $accent-color;
-  border-radius: 50%;
-  opacity: 0.08;
-  top: -100px;
-  left: -100px;
-  animation: blurMove 6s ease-in-out infinite;
-}
-
-.dashboard-container::after {
-  content: '';
-  position: absolute;
-  width: 300px;
-  height: 300px;
-  background: $primary-color;
-  border-radius: 50%;
-  opacity: 0.08;
-  bottom: -50px;
-  right: -50px;
-  animation: blurMove 6s ease-in-out infinite 1s;
+  @include themed-container();
 }
 
 // Main Content
 .dashboard-main {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: $spacing-2xl $spacing-xl;
-  width: 100%;
-  flex: 1;
-  position: relative;
-  z-index: 1;
-
-  @media (max-width: $tablet) {
-    padding: $spacing-lg $spacing-md;
-  }
-
-  @media (max-width: $mobile) {
-    padding: $spacing-md;
-  }
+  @include main-content();
 }
 
 // Welcome Section
 .welcome-section {
   margin-bottom: $spacing-2xl;
-  animation: fadeIn 0.6s ease-out;
 
   h2 {
     margin: 0 0 $spacing-sm 0;
@@ -135,7 +66,6 @@
   cursor: pointer;
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  animation: fadeIn 0.6s ease-out;
 
   @media (max-width: $mobile) {
     padding: $spacing-md;
@@ -206,21 +136,4 @@
   @media (max-width: $mobile) {
     font-size: $font-size-xs;
   }
-}
-
-// Animations
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.feature-card,
-.info-section {
-  animation: slideInDown 0.5s ease-out;
 }

@@ -1,0 +1,41 @@
+<div class="car-card">
+  <div class="car-header">
+    <h3>{{ car.manufacturer }} {{ car.model }}</h3>
+    <span class="car-number">CNR: {{ car.cnr }}</span>
+  </div>
+
+  <div class="car-details">
+    <div class="detail-row">
+      <span class="detail-label">Trip Number:</span>
+      <span class="detail-value">{{ car.activeTripNumber }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Fuel Type:</span>
+      <span class="detail-value">{{ car.fuel }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Power:</span>
+      <span class="detail-value">{{ car.powerKw }} kW</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Transmission:</span>
+      <span class="detail-value">{{ car.transmission }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Weight:</span>
+      <span class="detail-value">{{ car.weightKg }} kg</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Status:</span>
+      <span class="detail-value status-active" *ngIf="car.isActiveTrip">
+        <i class="bi bi-play-circle-fill"></i>
+        Active
+      </span>
+    </div>
+  </div>
+</div>
