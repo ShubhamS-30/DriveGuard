@@ -14,13 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.driveGuard.dataProducer.entity.Car;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
@@ -29,6 +23,7 @@ import com.driveGuard.dataProducer.service.CarService;
 
 @RestController
 @RequestMapping("/cars")
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
 @Tag(name = "Vehicle Management", description = "Endpoints for managing the fleet and tracking car status")
 public class CarController {
 
@@ -134,6 +129,6 @@ public class CarController {
     })
     @GetMapping("/active")
     public ResponseEntity<Page<CarDTO>> getActiveCars(@ParameterObject Pageable pageable) {
-        return ResponseEntity.ok(carService.getAllActiveCars(pageable.getPageNumber(), pageable.getPageSize()));
+        return ResponseEntity.ok(carService.getAllActiveCars(pageable));
     }
 }

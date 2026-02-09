@@ -15,6 +15,7 @@ import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -167,11 +168,16 @@ public class CarService {
         return mapper.carToCarDTO(endTrip(carId));
     }
 
-    public Page<CarDTO> getAllActiveCars(int page, int size) {
-        Page<Car> activeCarsPage = carRepository.findByIsActiveTrip(true, PageRequest.of(page, size));
+    // Change the parameters from (int page, int size) to (Pageable pageable)
+    public Page<CarDTO> getAllActiveCars(Pageable pageable) {
+        // Pass the 'pageable' object directly to the repository
+        // This preserves the 'sort' information (e.g., activeTripNumber,desc)
+        Page<Car> activeCarsPage = carRepository.findByIsActiveTrip(true, pageable);
+
         if(activeCarsPage.isEmpty()){
             throw new TripNotFoundException("No active cars found at the moment.");
         }
+
         return activeCarsPage.map(mapper::carToCarDTO);
     }
 }
