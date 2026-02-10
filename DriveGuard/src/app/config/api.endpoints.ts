@@ -6,10 +6,11 @@
 export const API_ENDPOINTS = {
   // Base URL
   BASE_URL: 'http://localhost:8080',
+  RULE_ENGINE: 'http://localhost:8082',
 
   // Car endpoints
   CARS: {
-    ACTIVE: '/cars/active',
+    ACTIVE: '/alerts/getActiveCars',
     GET_ALL: '/cars',
     GET_BY_CNR: (cnr: number) => `/cars/${cnr}`,
     CREATE: '/cars',

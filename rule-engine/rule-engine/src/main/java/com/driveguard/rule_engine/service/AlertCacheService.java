@@ -84,7 +84,7 @@ public class AlertCacheService {
             } catch (Exception e) {
                 log.error("Error during delayed removal for trip: " + tripNumber, e);
             }
-        }, 10, TimeUnit.SECONDS);
+        }, 15, TimeUnit.SECONDS);
     }
 
     // Ensure the scheduler is shut down properly when the app stops

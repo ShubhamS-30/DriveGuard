@@ -117,21 +117,6 @@ public class CarController {
         return ResponseEntity.ok(tripService.getTripsByCarId(carId, pageable));
     }
 
-    // Get paginated active cars
-    @Operation(
-            summary = "Get Paginated Active Cars",
-            description = "Retrieve paginated list of active cars currently on trips"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Active cars retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "No active cars found"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping("/active")
-    public ResponseEntity<Page<CarDTO>> getActiveCars(@ParameterObject Pageable pageable) {
-        return ResponseEntity.ok(carService.getAllActiveCars(pageable));
-    }
-
     // Get car ID by trip number
     @Operation(
             summary = "Get Car ID by Trip Number",

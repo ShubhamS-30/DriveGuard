@@ -13,10 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class AlertPersistenceService {
@@ -104,20 +101,17 @@ public class AlertPersistenceService {
 
     public List<CarResponseDTO> activeCarsWithTrips(){
         Set<String> activeTrips = alertCacheService.getAllActiveTrips();
-        return activeTrips.stream()
-                .map(tripNumber -> {
-                    try {
-                        CarResponseDTO carResponse = carCacheService.getCarByTripNumberWithCache(tripNumber);
-                        return carResponse != null ? Map.entry(tripNumber, carResponse) : null;
-                    } catch (Exception e) {
-                        log.error(String.format("Failed to fetch car for trip: %s", tripNumber), e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .filter(entry -> entry.getKey().equals(entry.getValue().getActiveTripNumber()))
-                .map(Map.Entry::getValue)
-                .toList();
+        List<CarResponseDTO> carResponseDTOList = new ArrayList<>();
+
+        for(String tripNumber : activeTrips){
+            CarResponseDTO car = carCacheService.getCarByTripNumberWithCache(tripNumber);
+            if(car != null && car.getIsActiveTrip() && car.getActiveTripNumber() != null && car.getActiveTripNumber().equals(tripNumber)){
+                carResponseDTOList.add(car);
+            } else {
+                log.warn(String.format("No car found for active trip: %s", tripNumber));
+            }
+        }
+        return carResponseDTOList;
     }
 
     /**

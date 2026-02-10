@@ -28,7 +28,7 @@ export class CarService {
       .set('sort', sort);
 
     return this.http.get<CarsResponse>(
-      `${API_ENDPOINTS.BASE_URL}${API_ENDPOINTS.CARS.ACTIVE}`,
+      `${API_ENDPOINTS.RULE_ENGINE}${API_ENDPOINTS.CARS.ACTIVE}`,
       { params }
     );
   }
