@@ -1,5 +1,6 @@
 package com.driveGuard.dataProducer.service;
 
+import com.driveGuard.dataProducer.dto.CarDTO;
 import com.driveGuard.dataProducer.dto.TripDTO;
 import com.driveGuard.dataProducer.entity.Trip;
 import com.driveGuard.dataProducer.exception.TripNotFoundException;
@@ -84,5 +85,17 @@ public class TripService {
         }
 
         return tripPage.map(mapper::tripTOTripDTO);
+    }
+
+    public CarDTO getCarIdByTripNumber(String tripNumber) {
+        Optional<Trip> tripOptional = tripRepository.getTripByTripNumber(tripNumber);
+        if (tripOptional.isEmpty()) {
+            throw new TripNotFoundException(String.format(TRIP_NOT_FOUND_MESSAGE, tripNumber));
+        }
+        else if(tripOptional.get().getCar() == null){
+            throw new TripNotFoundException(String.format("CAR FOR TRIP WITH ID : %s NOT FOUND.", tripNumber));
+        }
+
+       return mapper.carToCarDTO(tripOptional.get().getCar());
     }
 }

@@ -1,6 +1,7 @@
 package com.driveguard.rule_engine.controller;
 
 import com.driveguard.rule_engine.dto.Alert;
+import com.driveguard.rule_engine.dto.CarResponseDTO;
 import com.driveguard.rule_engine.service.AlertPersistenceService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
@@ -27,6 +28,11 @@ public class AlertController {
     public ResponseEntity<Page<Alert>> getAlertsByTripNumber(@PathVariable String tripNumber,
                                                              @ParameterObject Pageable pageable) {
         return ResponseEntity.ok(alertPersistenceService.getAlertsByTripNumber(tripNumber, pageable));
+    }
+
+    @GetMapping("/getActiveCars")
+    public ResponseEntity<Page<CarResponseDTO>> getActiveCars(@ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(alertPersistenceService.activeCarsWithTrips(pageable));
     }
 
 }

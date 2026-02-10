@@ -131,4 +131,19 @@ public class CarController {
     public ResponseEntity<Page<CarDTO>> getActiveCars(@ParameterObject Pageable pageable) {
         return ResponseEntity.ok(carService.getAllActiveCars(pageable));
     }
+
+    // Get car ID by trip number
+    @Operation(
+            summary = "Get Car ID by Trip Number",
+            description = "Retrieve the Car ID associated with a specific Trip Number"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Car ID retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Trip or car not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/trip/{tripNumber}/car")
+    public ResponseEntity<CarDTO> getCarIdByTripNumber(@PathVariable String tripNumber) {
+        return ResponseEntity.ok(tripService.getCarIdByTripNumber(tripNumber));
+    }
 }

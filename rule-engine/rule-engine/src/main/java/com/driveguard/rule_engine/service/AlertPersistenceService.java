@@ -3,18 +3,19 @@ package com.driveguard.rule_engine.service;
 import com.driveguard.rule_engine.AppLogger;
 import com.driveguard.rule_engine.Mapper;
 import com.driveguard.rule_engine.dto.Alert;
+import com.driveguard.rule_engine.dto.CarResponseDTO;
 import com.driveguard.rule_engine.entity.TripAlerts;
 import com.driveguard.rule_engine.exception.NoAlertsFoundException;
 import com.driveguard.rule_engine.repository.TripAlertsRepository;
 import jakarta.annotation.PostConstruct;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -24,6 +25,8 @@ public class AlertPersistenceService {
 
     private final AlertCacheService alertCacheService;
 
+    private final CarCacheService carCacheService;
+
     private final Mapper mapper;
 
     private AlertPersistenceService self;
@@ -31,7 +34,8 @@ public class AlertPersistenceService {
     private static final AppLogger log = AppLogger.getLogger(AlertPersistenceService.class);
 
     // Constructor Injection
-    public AlertPersistenceService(TripAlertsRepository repository, Mapper mapper, AlertCacheService alertCacheService) {
+    public AlertPersistenceService(TripAlertsRepository repository, Mapper mapper, AlertCacheService alertCacheService, CarCacheService carCacheService) {
+        this.carCacheService = carCacheService;
         this.alertCacheService = alertCacheService;
         this.repository = repository;
         this.mapper = mapper;
@@ -96,5 +100,116 @@ public class AlertPersistenceService {
                 // It's okay if an active trip doesn't have alerts yet
             }
         }
+    }
+
+    public List<CarResponseDTO> activeCarsWithTrips(){
+        Set<String> activeTrips = alertCacheService.getAllActiveTrips();
+        return activeTrips.stream()
+                .map(tripNumber -> {
+                    try {
+                        CarResponseDTO carResponse = carCacheService.getCarByTripNumberWithCache(tripNumber);
+                        return carResponse != null ? Map.entry(tripNumber, carResponse) : null;
+                    } catch (Exception e) {
+                        log.error(String.format("Failed to fetch car for trip: %s", tripNumber), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .filter(entry -> entry.getKey().equals(entry.getValue().getActiveTripNumber()))
+                .map(Map.Entry::getValue)
+                .toList();
+    }
+
+    /**
+     * Get active cars with pagination support.
+     * Retrieves all active cars, applies sorting, and then applies pagination to the result set.
+     *
+     * @param pageable Pagination parameters (page, size, sort)
+     * @return Page of CarResponseDTO with pagination metadata
+     */
+    @Transactional(readOnly = true)
+    public Page<CarResponseDTO> activeCarsWithTrips(Pageable pageable) {
+        // Step 1: Get all active cars
+        List<CarResponseDTO> allActiveCars = activeCarsWithTrips();
+
+        // Step 2: Apply sorting if requested
+        if (pageable.getSort().isSorted()) {
+            allActiveCars = sortCars(allActiveCars, pageable.getSort());
+        }
+
+        // Step 3: Apply pagination to the sorted list
+        int pageNumber = pageable.getPageNumber();
+        int pageSize = pageable.getPageSize();
+        int fromIndex = pageNumber * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, allActiveCars.size());
+
+        // Handle edge case where page number is beyond available data
+        if (fromIndex >= allActiveCars.size()) {
+            return new PageImpl<>(
+                    new java.util.ArrayList<>(),
+                    pageable,
+                    allActiveCars.size()
+            );
+        }
+
+        // Extract the page slice
+        List<CarResponseDTO> pageContent = allActiveCars.subList(fromIndex, toIndex);
+
+        log.info(String.format("Retrieved page %d with %d active cars out of %d total",
+                pageNumber, pageContent.size(), allActiveCars.size()));
+
+        // Step 4: Return as Page
+        return new PageImpl<>(
+                pageContent,
+                pageable,
+                allActiveCars.size()
+        );
+    }
+
+    /**
+     * Sort cars based on Sort parameters.
+     * Supports sorting by: cnr, manufacturer, model, fuel, powerKw, transmission, weightKg, isActiveTrip
+     *
+     * @param cars List of cars to sort
+     * @param sort Sort parameters
+     * @return Sorted list of cars
+     */
+    private List<CarResponseDTO> sortCars(List<CarResponseDTO> cars, Sort sort) {
+        return cars.stream()
+                .sorted((car1, car2) -> {
+                    for (Sort.Order order : sort) {
+                        int comparison = compareByField(car1, car2, order.getProperty());
+                        if (comparison != 0) {
+                            return order.isAscending() ? comparison : -comparison;
+                        }
+                    }
+                    return 0;
+                })
+                .toList();
+    }
+
+    /**
+     * Compare two cars by a specific field.
+     *
+     * @param car1 First car
+     * @param car2 Second car
+     * @param field Field to compare
+     * @return Comparison result (-1, 0, 1)
+     */
+    private int compareByField(CarResponseDTO car1, CarResponseDTO car2, String field) {
+        return switch (field) {
+            case "cnr" -> car1.getCnr().compareTo(car2.getCnr());
+            case "manufacturer" -> car1.getManufacturer().compareTo(car2.getManufacturer());
+            case "model" -> car1.getModel().compareTo(car2.getModel());
+            case "fuel" -> car1.getFuel().compareTo(car2.getFuel());
+            case "powerKw" -> car1.getPowerKw().compareTo(car2.getPowerKw());
+            case "transmission" -> car1.getTransmission().compareTo(car2.getTransmission());
+            case "weightKg" -> car1.getWeightKg().compareTo(car2.getWeightKg());
+            case "isActiveTrip" -> car1.getIsActiveTrip().compareTo(car2.getIsActiveTrip());
+            default -> {
+                log.warn(String.format("Unknown sort field: %s, defaulting to cnr", field));
+                yield car1.getCnr().compareTo(car2.getCnr());
+            }
+        };
     }
 }
