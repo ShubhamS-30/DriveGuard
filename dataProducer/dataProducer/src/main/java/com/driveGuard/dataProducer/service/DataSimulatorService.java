@@ -121,8 +121,9 @@ public class DataSimulatorService {
     public List<String> getTripIdsForMonth(String carNumber, String year, String month)
             throws IOException, TripNotFoundException {
         List<String> tripIds = new ArrayList<>();
+        String formattedCarNumber = "00" + carNumber;
         String paddedMonth = month.length() == 2 ? month : String.format("%02d", Integer.valueOf(month));
-        String folderName = String.format("%s_%s_%s", carNumber, year, paddedMonth);
+        String folderName = String.format("%s_%s_%s", formattedCarNumber, year, paddedMonth);
         log.info(String.format("Looking for trip IDs in folder: %s", folderName));
 
         Path monthDir = Paths.get(dataSimulatorDirectory, folderName);
@@ -146,7 +147,7 @@ public class DataSimulatorService {
 
     public void selectTripByCarId(Integer carId) throws IOException, TripNotFoundException {
         int tripMonth = r.nextInt(12) + 1;
-        String carNumber = String.format("%03d", carId); // Safer way to format car ID
+        String carNumber = carId.toString(); // Safer way to format car ID
 
         // This will prevent a trip from being marked "ended" if no data could be found.
         List<String> trips = getTripIdsForMonth(carNumber, simulationYear.toString(), Integer.toString(tripMonth));
@@ -228,7 +229,8 @@ public class DataSimulatorService {
     @Transactional
     public void publishTripData(String carNumber, String tripId, String tripMonth) throws IOException, TripNotFoundException {
         String tripMonthFormatted = String.format("%02d", Integer.parseInt(tripMonth));
-        String folderName = String.format("%s_%d_%s", carNumber, simulationYear, tripMonthFormatted);
+        String formattedCarNumber = "00" + carNumber;
+        String folderName = String.format("%s_%d_%s", formattedCarNumber, simulationYear, tripMonthFormatted);
         String fileName = tripId + ".csv";
         Path tripFile = Paths.get(dataSimulatorDirectory, folderName, fileName);
         if (!Files.exists(tripFile)) {

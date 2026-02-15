@@ -54,7 +54,7 @@ public class LocationStreamService {
     )
     public void consumeTripStatus(TripStatusMessage tripStatusMessage) {
         try {
-            String carId = String.format("%03d", tripStatusMessage.getCnr());
+            String carId = tripStatusMessage.getCnr().toString();
             boolean tripStatus = tripStatusMessage.isTripStatus();
 
             if (!tripStatus) {
