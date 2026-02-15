@@ -1,0 +1,144 @@
+<div class="active-trip-detail-container">
+  <div class="header">
+    <button class="back-btn" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i> Back to Active Trips
+    </button>
+    <h1>Vehicle Tracking - Car ID: {{ carId }}</h1>
+  </div>
+
+  <div class="connection-status">
+    <div [class.connected]="isConnected" [class.disconnected]="!isConnected">
+      <i class="bi" [class.bi-check-circle-fill]="isConnected" [class.bi-x-circle-fill]="!isConnected"></i>
+      <span>{{ isConnected ? 'Connected' : 'Disconnected' }}</span>
+    </div>
+    <div *ngIf="error" class="error-message">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ error }}</span>
+    </div>
+  </div>
+
+  <div *ngIf="locationData" class="trip-data">
+    <div class="data-section">
+      <h2>Location Information</h2>
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="label">Latitude:</span>
+          <span class="value">{{ locationData.latitude }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Longitude:</span>
+          <span class="value">{{ locationData.longitude }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Elevation:</span>
+          <span class="value">{{ locationData.elevation }} m</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Azimuth:</span>
+          <span class="value">{{ locationData.fwd_azimuth }}°</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <h2>Speed Information</h2>
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="label">Target Speed:</span>
+          <span class="value">{{ locationData.target_speed }} m/s</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Speed (OSRM):</span>
+          <span class="value">{{ locationData.speed_osrm }} m/s</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Way Max Speed:</span>
+          <span class="value">{{ locationData.way_Maxspeed ? locationData.way_Maxspeed + ' km/h' : 'N/A' }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Elevation Diff:</span>
+          <span class="value">{{ locationData.elevation_diff }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <h2>Road Information</h2>
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="label">Way Type:</span>
+          <span class="value">{{ locationData.way_type }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Way Surface:</span>
+          <span class="value">{{ locationData.way_surface }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Intersection:</span>
+          <span class="value">{{ locationData.node_intersection ? locationData.node_intersection : 'None' }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Railway:</span>
+          <span class="value">{{ locationData.node_railway ? locationData.node_railway : 'None' }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Crossing:</span>
+          <span class="value">{{ locationData.node_crossing ? locationData.node_crossing : 'None' }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Highway:</span>
+          <span class="value">{{ locationData.node_highway ? locationData.node_highway : 'None' }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Stop:</span>
+          <span class="value">{{ locationData.node_stop ? locationData.node_stop : 'None' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <h2>Trip Information</h2>
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="label">Trip Number:</span>
+          <span class="value">{{ locationData.tripNumber }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Car ID:</span>
+          <span class="value">{{ locationData.carId }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Trip Completion:</span>
+          <span class="value">{{ locationData.tripCompletion.toFixed(2) }}%</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Timestamp:</span>
+          <span class="value">{{ locationData.timestamp }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Start Stop:</span>
+          <span class="value">{{ locationData.start_stop }}</span>
+        </div>
+        <div class="data-item">
+          <span class="label">Azimuth Diff:</span>
+          <span class="value">{{ locationData.azimuth_diff }}°</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <h2>Last Update</h2>
+      <p>{{ lastUpdateTime | date : 'medium' }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="!locationData && isConnected" class="loading">
+    <i class="bi bi-hourglass-split"></i>
+    <p>Waiting for location data...</p>
+  </div>
+
+  <div *ngIf="!locationData && !isConnected && !error" class="loading">
+    <i class="bi bi-hourglass-split"></i>
+    <p>Connecting to vehicle tracking...</p>
+  </div>
+</div>

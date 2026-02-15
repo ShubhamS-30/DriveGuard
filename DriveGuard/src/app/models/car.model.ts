@@ -3,6 +3,7 @@
  */
 
 export interface Car {
+  id: string;
   cnr: number;
   manufacturer: string;
   model: string;

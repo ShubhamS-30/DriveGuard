@@ -1,7 +1,7 @@
 <div class="dashboard-container">
   <app-dashboard-header [currentUser]="currentUser" (logoutClick)="onLogout()"></app-dashboard-header>
 
-  <main class="dashboard-main" *ngIf="!showActiveTrips">
+  <main class="dashboard-main" *ngIf="showDashboard">
     <div class="welcome-section">
       <h2>Welcome, {{ currentUser?.username }}!</h2>
       <p>You are now logged into the DriveGuard monitoring system.</p>
@@ -19,5 +19,7 @@
     </div>
   </main>
 
-  <app-active-trips *ngIf="showActiveTrips" (backClick)="onBackToMain()"></app-active-trips>
+  <!-- <app-active-trips *ngIf="!showDashboard" (backClick)="onBackToMain()"></app-active-trips> -->
+
+  <router-outlet></router-outlet>
 </div>

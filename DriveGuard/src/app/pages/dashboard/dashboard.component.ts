@@ -1,24 +1,23 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterOutlet, UrlSegment } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService, User } from '../../services/auth.service';
 import { DashboardHeaderComponent } from './dashboard-header/dashboard-header.component';
 import { FeatureCardComponent, Feature } from './feature-card/feature-card.component';
-import { ActiveTripsComponent } from './active-trips/active-trips.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DashboardHeaderComponent, FeatureCardComponent,ActiveTripsComponent],
+  imports: [CommonModule, DashboardHeaderComponent, FeatureCardComponent, RouterOutlet],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   loginTime: Date = new Date();
-  showActiveTrips = false;
+  showDashboard = true;
   features: Feature[] = [
     {
       icon: 'geo-alt',
@@ -65,11 +64,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.activatedRoute.firstChild?.url
       .pipe(takeUntil(this.destroy$))
       .subscribe(url => {
-        if (url && url[0]?.path === 'active-trips') {
-          this.showActiveTrips = true;
-        } else {
-          this.showActiveTrips = false;
-        }
+        console.log('Route changed, current URL:', url);
+        this.showDashboard = this.showDashboardCards(url);
       });
 
     // If user is not authenticated, redirect to login
@@ -83,7 +79,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
    */
   onFeatureCardClick(feature: Feature): void {
     if (feature.type === 'location') {
-      this.showActiveTrips = true;
+      this.showDashboard = false;
       this.router.navigate(['/dashboard/active-trips']);
     }
   }
@@ -92,7 +88,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * Handle back from active trips
    */
   onBackToMain(): void {
-    this.showActiveTrips = false;
+    this.showDashboard = true;
     this.router.navigate(['/dashboard']);
   }
 
@@ -107,5 +103,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  showDashboardCards(urlSegment: UrlSegment[]): boolean {
+    if(!urlSegment || urlSegment.length === 0) {
+      return true;
+    }
+    switch (urlSegment[0].path) {
+      case 'active-trips':
+      case 'active-trip':
+        return false;
+      default:
+        return true;
+    }
   }
 }

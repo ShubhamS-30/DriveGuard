@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Car } from '../../../../models/car.model';
 
 
@@ -12,4 +13,11 @@ import { Car } from '../../../../models/car.model';
 })
 export class ActiveTripCardComponent {
   @Input() car!: Car;
+
+  constructor(private readonly router: Router) {}
+
+  goToTripDetail(): void {
+    console.log('Navigating to trip detail for car:', this.car);
+    this.router.navigate(['/dashboard/active-trip', this.car.cnr]);
+  }
 }
