@@ -6,6 +6,10 @@
     <h1>Vehicle Tracking - Car ID: {{ carId }}</h1>
   </div>
 
+  <div class="map-container">
+    <app-map></app-map>
+  </div>
+
   <div class="connection-status">
     <div [class.connected]="isConnected" [class.disconnected]="!isConnected">
       <i class="bi" [class.bi-check-circle-fill]="isConnected" [class.bi-x-circle-fill]="!isConnected"></i>

@@ -1,17 +1,24 @@
-import { Component, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, interval, of } from 'rxjs';
 import { takeUntil, switchMap, startWith, catchError } from 'rxjs/operators';
 import { CarService } from '../../../services/car.service';
 import { Car, CarsResponse } from '../../../models/car.model';
 import { ActiveTripCardComponent } from './active-trip-card/active-trip-card.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-active-trips',
   standalone: true,
   imports: [CommonModule, ActiveTripCardComponent],
   templateUrl: './active-trips.component.html',
-  styleUrl: './active-trips.component.scss'
+  styleUrl: './active-trips.component.scss',
 })
 export class ActiveTripsComponent implements OnInit, OnDestroy {
   @Output() backClick = new EventEmitter<void>();
@@ -25,7 +32,10 @@ export class ActiveTripsComponent implements OnInit, OnDestroy {
   isPolling = false;
   private readonly destroy$ = new Subject<void>();
 
-  constructor(private readonly carService: CarService) {}
+  constructor(
+    private readonly carService: CarService,
+    private readonly router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.startPolling();
@@ -51,10 +61,10 @@ export class ActiveTripsComponent implements OnInit, OnDestroy {
               this.isLoading = false;
               // Return empty to prevent error from propagating and terminating polling
               return of({ content: this.cars } as CarsResponse);
-            })
-          )
+            }),
+          ),
         ),
-        takeUntil(this.destroy$)
+        takeUntil(this.destroy$),
       )
       .subscribe({
         next: (response: CarsResponse) => {
@@ -64,7 +74,7 @@ export class ActiveTripsComponent implements OnInit, OnDestroy {
           if (response.content.length > 0 || !this.errorMessage) {
             this.errorMessage = null;
           }
-        }
+        },
       });
   }
 
@@ -72,8 +82,7 @@ export class ActiveTripsComponent implements OnInit, OnDestroy {
    * Emit back click event
    */
   onBackClick(): void {
-    this.stopPolling();
-    this.backClick.emit();
+    this.router.navigate(['/dashboard']);
   }
 
   /**
@@ -91,7 +100,7 @@ export class ActiveTripsComponent implements OnInit, OnDestroy {
         console.error('Error fetching active cars:', error);
         this.errorMessage = 'Failed to fetch active cars. Retrying...';
         this.isLoading = false;
-      }
+      },
     });
   }
 

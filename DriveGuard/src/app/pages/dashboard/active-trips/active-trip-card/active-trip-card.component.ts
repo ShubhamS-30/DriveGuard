@@ -17,7 +17,6 @@ export class ActiveTripCardComponent {
   constructor(private readonly router: Router) {}
 
   goToTripDetail(): void {
-    console.log('Navigating to trip detail for car:', this.car);
     this.router.navigate(['/dashboard/active-trip', this.car.cnr]);
   }
 }

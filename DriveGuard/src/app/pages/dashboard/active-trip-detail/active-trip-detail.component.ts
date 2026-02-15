@@ -5,11 +5,12 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { LocationData } from '../../../models/location.model';
 import { WebSocketService } from '../../../services/websocket.service';
+import { MapComponent } from './map/map.component';
 
 @Component({
   selector: 'app-active-trip-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule,MapComponent],
   templateUrl: './active-trip-detail.component.html',
   styleUrl: './active-trip-detail.component.scss'
 })
@@ -29,7 +30,6 @@ export class ActiveTripDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('ActiveTripDetailComponent initialized');
     // Get carId from route parameters
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       this.carId = params['carId'];

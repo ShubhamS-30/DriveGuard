@@ -64,7 +64,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.activatedRoute.firstChild?.url
       .pipe(takeUntil(this.destroy$))
       .subscribe(url => {
-        console.log('Route changed, current URL:', url);
         this.showDashboard = this.showDashboardCards(url);
       });
 
