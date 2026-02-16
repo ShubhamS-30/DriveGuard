@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, throttleTime } from 'rxjs/operators';
 import { LocationData } from '../../../models/location.model';
 import { WebSocketService } from '../../../services/websocket.service';
 import { MapComponent } from './map/map.component';
@@ -10,9 +10,9 @@ import { MapComponent } from './map/map.component';
 @Component({
   selector: 'app-active-trip-detail',
   standalone: true,
-  imports: [CommonModule,MapComponent],
+  imports: [CommonModule, MapComponent],
   templateUrl: './active-trip-detail.component.html',
-  styleUrl: './active-trip-detail.component.scss'
+  styleUrl: './active-trip-detail.component.scss',
 })
 export class ActiveTripDetailComponent implements OnInit, OnDestroy {
   carId: string = '';
@@ -26,7 +26,7 @@ export class ActiveTripDetailComponent implements OnInit, OnDestroy {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly webSocketService: WebSocketService
+    private readonly webSocketService: WebSocketService,
   ) {}
 
   ngOnInit(): void {
@@ -42,9 +42,17 @@ export class ActiveTripDetailComponent implements OnInit, OnDestroy {
 
     // Subscribe to location data updates
     this.webSocketService.locationData$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((data : any) => {
+      .pipe(
+        throttleTime(3000), // Only allow one update every (3 seconds)
+        takeUntil(this.destroy$),
+      )
+      .subscribe((data: any) => {
         this.locationData = data;
+        this.locationData = {
+          ...data,
+          latitude: Number(data.latitude),
+          longitude: Number(data.longitude),
+        };
         if (data) {
           this.lastUpdateTime = new Date();
         }
@@ -53,20 +61,23 @@ export class ActiveTripDetailComponent implements OnInit, OnDestroy {
     // Subscribe to connection status
     this.webSocketService.connectionStatus$
       .pipe(takeUntil(this.destroy$))
-      .subscribe((status : any) => {
+      .subscribe((status: any) => {
         this.isConnected = status;
       });
 
     // Subscribe to errors
     this.webSocketService.error$
       .pipe(takeUntil(this.destroy$))
-      .subscribe((errorMsg : any) => {
+      .subscribe((errorMsg: any) => {
         this.error = errorMsg;
       });
   }
 
   private connectToWebSocket(): void {
-    this.webSocketService.connect(this.carId).pipe(takeUntil(this.destroy$)).subscribe();
+    this.webSocketService
+      .connect(this.carId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe();
   }
 
   goBack(): void {

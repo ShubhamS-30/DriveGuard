@@ -7,7 +7,7 @@
   </div>
 
   <div class="map-container">
-    <app-map></app-map>
+    <app-map [curLatitude]="locationData?.latitude ?? 00.000" [curLongitude]="locationData?.longitude ?? 00.0000"></app-map>
   </div>
 
   <div class="connection-status">

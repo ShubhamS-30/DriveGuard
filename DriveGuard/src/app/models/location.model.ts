@@ -3,13 +3,13 @@
  */
 
 export interface LocationData {
-  latitude: string;
-  longitude: string;
-  target_speed: string;
-  way_Maxspeed: string | null;
-  speed_osrm: string;
-  elevation: string;
-  fwd_azimuth: string;
+  latitude: number;
+  longitude: number;
+  target_speed: number;
+  way_Maxspeed: number | null;
+  speed_osrm: number;
+  elevation: number;
+  fwd_azimuth:  number;
   way_type: string;
   way_surface: string;
   node_intersection: string | null;
@@ -18,10 +18,10 @@ export interface LocationData {
   node_highway: string | null;
   node_stop: string | null;
   start_stop: string;
-  azimuth_diff: string;
-  elevation_diff: string;
-  carId: string;
+  azimuth_diff:  number;
+  elevation_diff:  number;
+  carId:  number;
   tripNumber: string;
   timestamp: string;
-  tripCompletion: number;
+  tripCompletion:  number;
 }
